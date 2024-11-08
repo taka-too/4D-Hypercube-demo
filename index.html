@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Unified Rotation Control</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4D Hypercube with Corrected Rotation - v1.2</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -10,7 +11,7 @@
         canvas { background-color: white; }
         #controls { margin-top: 20px; }
         button { margin: 5px; padding: 10px; }
-        #instructions, #shape-name { font-family: Arial, sans-serif; color: black; margin-top: 10px; text-align: center; }
+        #instructions, #shape-name, #version { font-family: Arial, sans-serif; color: black; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
@@ -45,6 +46,7 @@
     </div>
 
     <div id="shape-name"></div>
+    <div id="version">Code Version: v1.2</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -78,6 +80,7 @@
         }
         displayShapeName();
 
+        // 変換関数を使ってプロジェクション座標系を取得
         function convertToProjection(vertex4D, projectionMode) {
             let projectedVertex;
             switch (projectionMode) {
@@ -89,6 +92,7 @@
             return projectedVertex;
         }
 
+        // 投影後の3次元表示用座標系に基づき、4次元座標の各頂点を2Dに投影
         function project4DTo2D(vertex4D, offsetX, offsetY) {
             const [x, y, z, u] = vertex4D;
             const perspective = 3 - z;
@@ -103,7 +107,15 @@
             const offsetY = ctx.canvas.height / 2;
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-            const vertices4D = universalVertices4D.map(vertex4D => convertToProjection(vertex4D, projectionMode));
+            const vertices4D = universalVertices4D.map(vertex4D => {
+                let projectedVertex = convertToProjection(vertex4D, projectionMode);
+
+                // 回転の適用 - 各軸の対応により回転を正確に行う
+                if (rotationState.axis1_axis3) projectedVertex = rotate4D(projectedVertex, rotationState.axis1_axis3 * 0.02, 0, 2);
+                if (rotationState.axis2_axis3) projectedVertex = rotate4D(projectedVertex, rotationState.axis2_axis3 * 0.02, 1, 2);
+
+                return projectedVertex;
+            });
 
             edges.forEach(([startIdx, endIdx]) => {
                 const startVertex4D = vertices4D[startIdx];
@@ -134,7 +146,6 @@
         }
 
         function updateAndDraw() {
-           
             canvases.forEach(({ canvas, projectionMode }) => {
                 const ctx = canvas.getContext('2d');
                 drawVerticesAndEdges(ctx, currentShape.universalVertices4D, currentShape.edges, projectionMode);
@@ -219,7 +230,7 @@
             currentShape.universalVertices4D = currentShape.universalVertices4D.map(vertex4D => {
                 const angle = 0.02;
 
-                // 第一要素と第三要素、第二要素と第三要素を使って回転を適用
+                // 普遍的な4D座標系をもとに回転
                 if (rotationState.axis1_axis3) vertex4D = rotate4D(vertex4D, rotationState.axis1_axis3 * angle, 0, 2);
                 if (rotationState.axis2_axis3) vertex4D = rotate4D(vertex4D, rotationState.axis2_axis3 * angle, 1, 2);
                 
@@ -235,3 +246,4 @@
     </script>
 </body>
 </html>
+
