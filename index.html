@@ -9,24 +9,16 @@
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
         .canvas-wrapper { text-align: center; }
         canvas { background-color: white; }
+        #controls { margin-top: 20px; }
+        button { margin: 5px; padding: 10px; }
         #instructions, #shape-name { font-family: Arial, sans-serif; color: black; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
     <div id="instructions">
-        <p><strong>Rotation Controls:</strong></p>
-        <p>X-Y: [Q (negative)], [W (positive)]</p>
-        <p>X-Z: [A (negative)], [S (positive)]</p>
-        <p>X-U: [E (negative)], [R (positive)]</p>
-        <p>Y-Z: [D (negative)], [F (positive)]</p>
-        <p>Y-U: [Z (negative)], [X (positive)]</p>
-        <p>Z-U: [C (negative)], [V (positive)]</p>
-        <p>Zoom In/Out: [+], [-]</p>
-        <p>Reset to Initial Position: [L]</p>
-        <p><strong>Switch Shape:</strong> Press P to cycle through shapes</p>
+        <p><strong>Rotation and Controls</strong></p>
     </div>
 
-    <!-- 各 projectionMode 用のキャンバスとタイトル -->
     <div class="canvas-container">
         <div class="canvas-wrapper">
             <canvas id="canvas1" width="300" height="300"></canvas>
@@ -44,6 +36,13 @@
             <canvas id="canvas4" width="300" height="300"></canvas>
             <p>Projection Mode 4: (X, Y, Z, U)</p>
         </div>
+    </div>
+
+    <div id="controls">
+        <button id="switchShape">Switch Shape</button>
+        <button id="resetPosition">Reset Position</button>
+        <button id="zoomIn">Zoom In</button>
+        <button id="zoomOut">Zoom Out</button>
     </div>
 
     <div id="shape-name"></div>
@@ -73,6 +72,7 @@
         let scale = 80;
         const k = 255;
         const rotationState = { x_y: 0, x_z: 0, x_u: 0, y_z: 0, y_u: 0, z_u: 0 };
+        let lastX, lastY, isDragging = false;
 
         function displayShapeName() {
             document.getElementById('shape-name').textContent = `Current Shape: ${currentShape.name}`;
@@ -142,46 +142,53 @@
             updateAndDraw();
         }
 
-        window.addEventListener('keydown', (event) => {
-            if (event.key === 'p') {
-                currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
-                currentShape = shapes[currentShapeIndex];
-                displayShapeName();
-                resetToInitialPosition();
-            } else {
-                handleRotationAndZoom(event);
-            }
+        // スワイプ/ドラッグによる回転
+        canvases.forEach(({ canvas }) => {
+            canvas.addEventListener('mousedown', (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - lastX;
+                    const deltaY = e.clientY - lastY;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    rotationState.x_y += deltaX * 0.001;
+                    rotationState.y_z += deltaY * 0.001;
+                }
+            });
+            canvas.addEventListener('mouseup', () => { isDragging = false; });
+            canvas.addEventListener('mouseleave', () => { isDragging = false; });
+            canvas.addEventListener('touchstart', (e) => { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; });
+            canvas.addEventListener('touchmove', (e) => {
+                if (isDragging) {
+                    const deltaX = e.touches[0].clientX - lastX;
+                    const deltaY = e.touches[0].clientY - lastY;
+                    lastX = e.touches[0].clientX;
+                    lastY = e.touches[0].clientY;
+                    rotationState.x_y += deltaX * 0.001;
+                    rotationState.y_z += deltaY * 0.001;
+                }
+            });
+            canvas.addEventListener('touchend', () => { isDragging = false; });
         });
 
-        function handleRotationAndZoom(event) {
-            switch (event.key) {
-                case 'q': rotationState.x_y = -1; break;
-                case 'w': rotationState.x_y = 1; break;
-                case 'a': rotationState.x_z = -1; break;
-                case 's': rotationState.x_z = 1; break;
-                case 'e': rotationState.x_u = -1; break;
-                case 'r': rotationState.x_u = 1; break;
-                case 'd': rotationState.y_z = -1; break;
-                case 'f': rotationState.y_z = 1; break;
-                case 'z': rotationState.y_u = -1; break;
-                case 'x': rotationState.y_u = 1; break;
-                case 'c': rotationState.z_u = -1; break;
-                case 'v': rotationState.z_u = 1; break;
-                case '+': scale += 10; break; // Zoom in
-                case '-': scale -= 10; break; // Zoom out
-                case 'l': resetToInitialPosition(); break; // Reset to initial position
-            }
-        }
+        // ボタン操作
+        document.getElementById('switchShape').addEventListener('click', () => {
+            currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
+            currentShape = shapes[currentShapeIndex];
+            displayShapeName();
+            resetToInitialPosition();
+        });
 
-        window.addEventListener('keyup', (event) => {
-            switch (event.key) {
-                case 'q': case 'w': rotationState.x_y = 0; break;
-                case 'a': case 's': rotationState.x_z = 0; break;
-                case 'e': case 'r': rotationState.x_u = 0; break;
-                case 'd': case 'f': rotationState.y_z = 0; break;
-                case 'z': case 'x': rotationState.y_u = 0; break;
-                case 'c': case 'v': rotationState.z_u = 0; break;
-            }
+        document.getElementById('resetPosition').addEventListener('click', resetToInitialPosition);
+
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            scale += 10;
+            updateAndDraw();
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            scale -= 10;
+            updateAndDraw();
         });
 
         function rotate4D(vertex, angle, axis1, axis2) {
@@ -210,9 +217,8 @@
             requestAnimationFrame(animate);
         }
 
-        // アニメーションを開始し、図形データが初期化されたら描画を開始
+        // start animation
         animate();
     </script>
 </body>
 </html>
-
