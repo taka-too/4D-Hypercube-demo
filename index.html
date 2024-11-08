@@ -102,7 +102,7 @@
                 edges.forEach(([startIdx, endIdx]) => {
                     const startVertex = vertices[startIdx];
                     const endVertex = vertices[endIdx];
-                    for (let i = 0; i <= 50; i++) {  // ドット数を増やす
+                    for (let i = 0; i <= 50; i++) {
                         const t = i / 50;
                         const interpolatedVertex = [
                             startVertex[0] * (1 - t) + endVertex[0] * t,
@@ -167,13 +167,13 @@
             });
         }
 
-        function rotate4D(vertex, angle, axis1, axis2) {
+        function rotate4D(vertex, angle, axis1, axis2, rotate_axis1, rotate_axis2) {
             const cos = Math.cos(angle);
             const sin = Math.sin(angle);
 
             let rotatedVertex = [...vertex];
-            rotatedVertex[axis1] = cos * vertex[axis1] - sin * vertex[axis2];
-            rotatedVertex[axis2] = sin * vertex[axis1] + cos * vertex[axis2];
+            rotatedVertex[rotate_axis1] = cos * vertex[axis1] - sin * vertex[axis2];
+            rotatedVertex[rotate_axis2] = sin * vertex[axis1] + cos * vertex[axis2];
 
             return rotatedVertex;
         }
@@ -181,12 +181,12 @@
         function animate() {
             currentShape.vertices = currentShape.vertices.map(vertex => {
                 const angle = 0.02;
-                if (rotationState.x_y) vertex = rotate4D(vertex, rotationState.x_y * angle, 0, 1);
-                if (rotationState.x_z) vertex = rotate4D(vertex, rotationState.x_z * angle, 0, 2);
-                if (rotationState.x_u) vertex = rotate4D(vertex, rotationState.x_u * angle, 0, 3);
-                if (rotationState.y_z) vertex = rotate4D(vertex, rotationState.y_z * angle, 1, 2);
-                if (rotationState.y_u) vertex = rotate4D(vertex, rotationState.y_u * angle, 1, 3);
-                if (rotationState.z_u) vertex = rotate4D(vertex, rotationState.z_u * angle, 2, 3);
+                if (rotationState.x_y) vertex = rotate4D(vertex, rotationState.x_y * angle, 0, 1, 0, 1);
+                if (rotationState.x_z) vertex = rotate4D(vertex, rotationState.x_z * angle, 0, 2, 0, 2);
+                if (rotationState.x_u) vertex = rotate4D(vertex, rotationState.x_u * angle, 0, 3, 0, 3);
+                if (rotationState.y_z) vertex = rotate4D(vertex, rotationState.y_z * angle, 1, 2, 1, 2);
+                if (rotationState.y_u) vertex = rotate4D(vertex, rotationState.y_u * angle, 1, 3, 1, 3);
+                if (rotationState.z_u) vertex = rotate4D(vertex, rotationState.z_u * angle, 2, 3, 2, 3);
                 return vertex;
             });
             updateAndDraw();
