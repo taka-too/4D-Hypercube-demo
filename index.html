@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube and 3D Cube Display with Multiple Projection Modes</title>
+    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4D Hypercube with Unified Rotation Control</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -54,13 +53,12 @@
         import { tetrahedron4DVertices, tetrahedron4DEdges } from './shapes/tetrahedron4DData.js';
 
         const canvases = [
-            { canvas: document.getElementById('canvas1'), projectionMode: 1, axisPairX: 'u_z', axisPairY: 'y_z' },
-            { canvas: document.getElementById('canvas2'), projectionMode: 2, axisPairX: 'x_z', axisPairY: 'u_z' },
-            { canvas: document.getElementById('canvas3'), projectionMode: 3, axisPairX: 'x_u', axisPairY: 'y_u' },
-            { canvas: document.getElementById('canvas4'), projectionMode: 4, axisPairX: 'x_z', axisPairY: 'y_z' }
+            { canvas: document.getElementById('canvas1'), projectionMode: 1, axisPairX: 'axis1_axis3', axisPairY: 'axis2_axis3' },
+            { canvas: document.getElementById('canvas2'), projectionMode: 2, axisPairX: 'axis1_axis3', axisPairY: 'axis2_axis3' },
+            { canvas: document.getElementById('canvas3'), projectionMode: 3, axisPairX: 'axis1_axis3', axisPairY: 'axis2_axis3' },
+            { canvas: document.getElementById('canvas4'), projectionMode: 4, axisPairX: 'axis1_axis3', axisPairY: 'axis2_axis3' }
         ];
 
-        // 普遍的な4次元座標を保持
         const shapes = [
             { name: 'Hypercube', universalVertices4D: hypercubeVertices.map(v => [...v]), edges: hypercubeEdges, initialVertices4D: hypercubeVertices.map(v => [...v]) },
             { name: 'Cube', universalVertices4D: cubeVertices.map(v => [...v]), edges: cubeEdges, initialVertices4D: cubeVertices.map(v => [...v]) },
@@ -72,7 +70,7 @@
         let currentShape = shapes[currentShapeIndex];
         let scale = 80;
         const k = 255;
-        const rotationState = { x_y: 0, x_z: 0, x_u: 0, y_z: 0, y_u: 0, z_u: 0 };
+        const rotationState = { axis1_axis3: 0, axis2_axis3: 0 };
         let lastX, lastY, isDragging = false;
 
         function displayShapeName() {
@@ -80,7 +78,6 @@
         }
         displayShapeName();
 
-        // 4次元座標を特定のプロジェクションモード用に変換
         function convertToProjection(vertex4D, projectionMode) {
             let projectedVertex;
             switch (projectionMode) {
@@ -92,7 +89,6 @@
             return projectedVertex;
         }
 
-        // 変換された4次元座標から2D表示座標に変換
         function project4DTo2D(vertex4D, offsetX, offsetY) {
             const [x, y, z, u] = vertex4D;
             const perspective = 3 - z;
@@ -102,7 +98,6 @@
             return { x: px, y: py, color };
         }
 
-        // 各キャンバスの描画関数
         function drawVerticesAndEdges(ctx, universalVertices4D, edges, projectionMode) {
             const offsetX = ctx.canvas.width / 2;
             const offsetY = ctx.canvas.height / 2;
@@ -129,7 +124,7 @@
                 }
             });
 
-            (vertex4D => {
+            vertices4D.forEach(vertex4D => {
                 const { x, y, color } = project4DTo2D(vertex4D, offsetX, offsetY);
                 ctx.beginPath();
                 ctx.arc(x, y, 5, 0, Math.PI * 2);
@@ -139,6 +134,7 @@
         }
 
         function updateAndDraw() {
+           
             canvases.forEach(({ canvas, projectionMode }) => {
                 const ctx = canvas.getContext('2d');
                 drawVerticesAndEdges(ctx, currentShape.universalVertices4D, currentShape.edges, projectionMode);
@@ -150,7 +146,7 @@
             updateAndDraw();
         }
 
-        // 各キャンバスに異なる回転軸のペアでドラッグ操作を設定
+        // 各キャンバスにドラッグ操作での回転軸設定
         canvases.forEach(({ canvas, axisPairX, axisPairY }) => {
             canvas.addEventListener('mousedown', (e) => { 
                 isDragging = true; 
@@ -223,27 +219,9 @@
             currentShape.universalVertices4D = currentShape.universalVertices4D.map(vertex4D => {
                 const angle = 0.02;
 
-                // 各プロジェクションモードに応じて rotationState の軸を選択
-                canvases.forEach(({ projectionMode, axisPairX, axisPairY }) => {
-                    switch (projectionMode) {
-                        case 1: // Projection Mode 1: (U, Y, Z, X)
-                            if (rotationState[axisPairX]) vertex4D = rotate4D(vertex4D, rotationState[axisPairX] * angle, 3, 2); // U-Z
-                            if (rotationState[axisPairY]) vertex4D = rotate4D(vertex4D, rotationState[axisPairY] * angle, 1, 2); // Y-Z
-                            break;
-                        case 2: // Projection Mode 2: (X, U, Z, Y)
-                            if (rotationState[axisPairX]) vertex4D = rotate4D(vertex4D, rotationState[axisPairX] * angle, 0, 2); // X-Z
-                            if (rotationState[axisPairY]) vertex4D = rotate4D(vertex4D, rotationState[axisPairY] * angle, 3, 2); // U-Z
-                            break;
-                        case 3: // Projection Mode 3: (X, Y, U, Z)
-                            if (rotationState[axisPairX]) vertex4D = rotate4D(vertex4D, rotationState[axisPairX] * angle, 0, 3); // X-U
-                            if (rotationState[axisPairY]) vertex4D = rotate4D(vertex4D, rotationState[axisPairY] * angle, 1, 3); // Y-U
-                            break;
-                        case 4: // Projection Mode 4: (X, Y, Z, U)
-                            if (rotationState[axisPairX]) vertex4D = rotate4D(vertex4D, rotationState[axisPairX] * angle, 0, 2); // X-Z
-                            if (rotationState[axisPairY]) vertex4D = rotate4D(vertex4D, rotationState[axisPairY] * angle, 1, 2); // Y-Z
-                            break;
-                    }
-                });
+                // 第一要素と第三要素、第二要素と第三要素を使って回転を適用
+                if (rotationState.axis1_axis3) vertex4D = rotate4D(vertex4D, rotationState.axis1_axis3 * angle, 0, 2);
+                if (rotationState.axis2_axis3) vertex4D = rotate4D(vertex4D, rotationState.axis2_axis3 * angle, 1, 2);
                 
                 return vertex4D;
             });
