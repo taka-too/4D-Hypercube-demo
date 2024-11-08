@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Corrected Rotation - v1.2</title>
+    <title>4D Hypercube with Generalized Rotation - v1.4</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -46,7 +46,7 @@
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v1.2</div>
+    <div id="version">Code Version: v1.4</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -55,10 +55,10 @@
         import { tetrahedron4DVertices, tetrahedron4DEdges } from './shapes/tetrahedron4DData.js';
 
         const canvases = [
-            { canvas: document.getElementById('canvas1'), projectionMode: 1, axisPairX: 'axis1_axis3', axisPairY: 'axis2_axis3' },
-            { canvas: document.getElementById('canvas2'), projectionMode: 2, axisPairX: 'axis1_axis3', axisPairY: 'axis2_axis3' },
-            { canvas: document.getElementById('canvas3'), projectionMode: 3, axisPairX: 'axis1_axis3', axisPairY: 'axis2_axis3' },
-            { canvas: document.getElementById('canvas4'), projectionMode: 4, axisPairX: 'axis1_axis3', axisPairY: 'axis2_axis3' }
+            { canvas: document.getElementById('canvas1'), rotationAxes: [3, 1, 2, 0] }, // (U, Y, Z, X)
+            { canvas: document.getElementById('canvas2'), rotationAxes: [0, 3, 2, 1] }, // (X, U, Z, Y)
+            { canvas: document.getElementById('canvas3'), rotationAxes: [0, 1, 3, 2] }, // (X, Y, U, Z)
+            { canvas: document.getElementById('canvas4'), rotationAxes: [0, 1, 2, 3] }  // (X, Y, Z, U)
         ];
 
         const shapes = [
@@ -80,19 +80,12 @@
         }
         displayShapeName();
 
-        // 変換関数を使ってプロジェクション座標系を取得
-        function convertToProjection(vertex4D, projectionMode) {
-            let projectedVertex;
-            switch (projectionMode) {
-                case 1: projectedVertex = [vertex4D[3], vertex4D[1], vertex4D[2], vertex4D[0]]; break;
-                case 2: projectedVertex = [vertex4D[0], vertex4D[3], vertex4D[2], vertex4D[1]]; break;
-                case 3: projectedVertex = [vertex4D[0], vertex4D[1], vertex4D[3], vertex4D[2]]; break;
-                case 4: projectedVertex = [vertex4D[0], vertex4D[1], vertex4D[2], vertex4D[3]]; break;
-            }
-            return projectedVertex;
+        // 汎用的なプロジェクション変換
+        function applyProjection(vertex4D, rotationAxes) {
+            return rotationAxes.map(axis => vertex4D[axis]);
         }
 
-        // 投影後の3次元表示用座標系に基づき、4次元座標の各頂点を2Dに投影
+        // 2Dに投影
         function project4DTo2D(vertex4D, offsetX, offsetY) {
             const [x, y, z, u] = vertex4D;
             const perspective = 3 - z;
@@ -102,15 +95,15 @@
             return { x: px, y: py, color };
         }
 
-        function drawVerticesAndEdges(ctx, universalVertices4D, edges, projectionMode) {
+        function drawVerticesAndEdges(ctx, universalVertices4D, edges, rotationAxes) {
             const offsetX = ctx.canvas.width / 2;
             const offsetY = ctx.canvas.height / 2;
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
             const vertices4D = universalVertices4D.map(vertex4D => {
-                let projectedVertex = convertToProjection(vertex4D, projectionMode);
+                let projectedVertex = applyProjection(vertex4D, rotationAxes);
 
-                // 回転の適用 - 各軸の対応により回転を正確に行う
+                // 回転を適用 - 各プロジェクションの座標軸に基づく
                 if (rotationState.axis1_axis3) projectedVertex = rotate4D(projectedVertex, rotationState.axis1_axis3 * 0.02, 0, 2);
                 if (rotationState.axis2_axis3) projectedVertex = rotate4D(projectedVertex, rotationState.axis2_axis3 * 0.02, 1, 2);
 
@@ -146,9 +139,9 @@
         }
 
         function updateAndDraw() {
-            canvases.forEach(({ canvas, projectionMode }) => {
+            canvases.forEach(({ canvas, rotationAxes }) => {
                 const ctx = canvas.getContext('2d');
-                drawVerticesAndEdges(ctx, currentShape.universalVertices4D, currentShape.edges, projectionMode);
+                drawVerticesAndEdges(ctx, currentShape.universalVertices4D, currentShape.edges, rotationAxes);
             });
         }
 
@@ -158,10 +151,10 @@
         }
 
         // 各キャンバスにドラッグ操作での回転軸設定
-        canvases.forEach(({ canvas, axisPairX, axisPairY }) => {
+        canvases.forEach(({ canvas }) => {
             canvas.addEventListener('mousedown', (e) => { 
                 isDragging = true; 
-                lastX = e.clientX; 
+                lastX = e.clientX;
                 lastY = e.clientY; 
             });
             canvas.addEventListener('mousemove', (e) => {
@@ -170,8 +163,8 @@
                     const deltaY = e.clientY - lastY;
                     lastX = e.clientX;
                     lastY = e.clientY;
-                    rotationState[axisPairX] += deltaX * 0.001;
-                    rotationState[axisPairY] += deltaY * 0.001;
+                    rotationState.axis1_axis3 += deltaX * 0.001;
+                    rotationState.axis2_axis3 += deltaY * 0.001;
                 }
             });
             canvas.addEventListener('mouseup', () => { isDragging = false; });
@@ -187,8 +180,8 @@
                     const deltaY = e.touches[0].clientY - lastY;
                     lastX = e.touches[0].clientX;
                     lastY = e.touches[0].clientY;
-                    rotationState[axisPairX] += deltaX * 0.001;
-                    rotationState[axisPairY] += deltaY * 0.001;
+                    rotationState.axis1_axis3 += deltaX * 0.001;
+                    rotationState.axis2_axis3 += deltaY * 0.001;
                 }
             });
             canvas.addEventListener('touchend', () => { isDragging = false; });
@@ -230,11 +223,13 @@
             currentShape.universalVertices4D = currentShape.universalVertices4D.map(vertex4D => {
                 const angle = 0.02;
 
-                // 普遍的な4D座標系をもとに回転
-                if (rotationState.axis1_axis3) vertex4D = rotate4D(vertex4D, rotationState.axis1_axis3 * angle, 0, 2);
-                if (rotationState.axis2_axis3) vertex4D = rotate4D(vertex4D, rotationState.axis2_axis3 * angle, 1, 2);
-                
-                return vertex4D;
+                // 各頂点に、回転状態に基づいて回転を適用
+                let rotatedVertex = [...vertex4D];
+
+                if (rotationState.axis1_axis3) rotatedVertex = rotate4D(rotatedVertex, rotationState.axis1_axis3 * angle, 0, 2);
+                if (rotationState.axis2_axis3) rotatedVertex = rotate4D(rotatedVertex, rotationState.axis2_axis3 * angle, 1, 2);
+
+                return rotatedVertex;
             });
 
             updateAndDraw();
@@ -246,4 +241,3 @@
     </script>
 </body>
 </html>
-
