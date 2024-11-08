@@ -158,8 +158,8 @@
                         const deltaY = e.clientY - lastY;
                         lastX = e.clientX;
                         lastY = e.clientY;
-                        this.rotationState.axis1_axis3 += deltaX * 0.001;
-                        this.rotationState.axis2_axis3 += deltaY * 0.001;
+                        this.rotationState.axis1_axis3 += deltaX * 0.1;
+                        this.rotationState.axis2_axis3 += deltaY * 0.1;
                     }
                 });
                 this.canvas.addEventListener('mouseup', () => { isDragging = false; });
