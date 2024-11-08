@@ -54,10 +54,10 @@
         import { tetrahedron4DVertices, tetrahedron4DEdges } from './shapes/tetrahedron4DData.js';
 
         const canvases = [
-            { canvas: document.getElementById('canvas1'), projectionMode: 1 },
-            { canvas: document.getElementById('canvas2'), projectionMode: 2 },
-            { canvas: document.getElementById('canvas3'), projectionMode: 3 },
-            { canvas: document.getElementById('canvas4'), projectionMode: 4 }
+            { canvas: document.getElementById('canvas1'), projectionMode: 1, axisPairX: 'u_z', axisPairY: 'y_z' },
+            { canvas: document.getElementById('canvas2'), projectionMode: 2, axisPairX: 'x_z', axisPairY: 'u_z' },
+            { canvas: document.getElementById('canvas3'), projectionMode: 3, axisPairX: 'x_u', axisPairY: 'y_u' },
+            { canvas: document.getElementById('canvas4'), projectionMode: 4, axisPairX: 'x_z', axisPairY: 'y_z' }
         ];
 
         const shapes = [
@@ -142,8 +142,8 @@
             updateAndDraw();
         }
 
-        // スワイプ/ドラッグによる回転
-        canvases.forEach(({ canvas }) => {
+        // 各キャンバスに異なる回転軸のペアでドラッグ操作を設定
+        canvases.forEach(({ canvas, axisPairX, axisPairY }) => {
             canvas.addEventListener('mousedown', (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
             canvas.addEventListener('mousemove', (e) => {
                 if (isDragging) {
@@ -151,8 +151,8 @@
                     const deltaY = e.clientY - lastY;
                     lastX = e.clientX;
                     lastY = e.clientY;
-                    rotationState.x_y += deltaX * 0.001;
-                    rotationState.y_z += deltaY * 0.001;
+                    rotationState[axisPairX] += deltaX * 0.001;
+                    rotationState[axisPairY] += deltaY * 0.001;
                 }
             });
             canvas.addEventListener('mouseup', () => { isDragging = false; });
@@ -164,8 +164,8 @@
                     const deltaY = e.touches[0].clientY - lastY;
                     lastX = e.touches[0].clientX;
                     lastY = e.touches[0].clientY;
-                    rotationState.x_y += deltaX * 0.001;
-                    rotationState.y_z += deltaY * 0.001;
+                    rotationState[axisPairX] += deltaX * 0.001;
+                    rotationState[axisPairY] += deltaY * 0.001;
                 }
             });
             canvas.addEventListener('touchend', () => { isDragging = false; });
@@ -217,7 +217,7 @@
             requestAnimationFrame(animate);
         }
 
-        // start animation
+        // アニメーション開始
         animate();
     </script>
 </body>
