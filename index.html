@@ -180,4 +180,44 @@
 
         function animate() {
             currentShape.vertices = currentShape.vertices.map(vertex => {
-                const angle = 0.
+                const angle = 0.02;
+                if (rotationState.x_y) vertex = rotate4D(vertex, rotationState.x_y * angle, 0, 1);
+                if (rotationState.x_z) vertex = rotate4D(vertex, rotationState.x_z * angle, 0, 2);
+                if (rotationState.x_u) vertex = rotate4D(vertex, rotationState.x_u * angle, 0, 3);
+                if (rotationState.y_z) vertex = rotate4D(vertex, rotationState.y_z * angle, 1, 2);
+                if (rotationState.y_u) vertex = rotate4D(vertex, rotationState.y_u * angle, 1, 3);
+                if (rotationState.z_u) vertex = rotate4D(vertex, rotationState.z_u * angle, 2, 3);
+                return vertex;
+            });
+            updateAndDraw();
+            requestAnimationFrame(animate);
+        }
+
+        document.getElementById('switchShape').addEventListener('click', () => {
+            currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
+            currentShape = shapes[currentShapeIndex];
+            displayShapeName();
+            resetToInitialPosition();
+        });
+
+        document.getElementById('resetPosition').addEventListener('click', resetToInitialPosition);
+
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            scale += 10;
+            updateAndDraw();
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            scale -= 10;
+            updateAndDraw();
+        });
+
+        function displayShapeName() {
+            document.getElementById('shape-name').textContent = `Current Shape: ${currentShape.name}`;
+        }
+        displayShapeName();
+
+        animate();
+    </script>
+</body>
+</html>
