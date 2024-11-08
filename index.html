@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4D Hypercube and 3D Cube Display with Multiple Projection Modes</title>
+    <style>
+        body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
+        .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+        .canvas-wrapper { text-align: center; }
+        canvas { background-color: white; }
+        #instructions, #shape-name { font-family: Arial, sans-serif; color: black; margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="instructions">
+        <p><strong>Rotation Controls:</strong></p>
+        <p>X-Y: [Q (negative)], [W (positive)]</p>
+        <p>X-Z: [A (negative)], [S (positive)]</p>
+        <p>X-U: [E (negative)], [R (positive)]</p>
+        <p>Y-Z: [D (negative)], [F (positive)]</p>
+        <p>Y-U: [Z (negative)], [X (positive)]</p>
+        <p>Z-U: [C (negative)], [V (positive)]</p>
+        <p>Zoom In/Out: [+], [-]</p>
+        <p>Reset to Initial Position: [L]</p>
+        <p><strong>Switch Shape:</strong> Press P to cycle through shapes</p>
+    </div>
+
+    <!-- 各 projectionMode 用のキャンバスとタイトル -->
+    <div class="canvas-container">
+        <div class="canvas-wrapper">
+            <canvas id="canvas1" width="300" height="300"></canvas>
+            <p>Projection Mode 1: (U, Y, Z, X)</p>
+        </div>
+        <div class="canvas-wrapper">
+            <canvas id="canvas2" width="300" height="300"></canvas>
+            <p>Projection Mode 2: (X, U, Z, Y)</p>
+        </div>
+        <div class="canvas-wrapper">
+            <canvas id="canvas3" width="300" height="300"></canvas>
+            <p>Projection Mode 3: (X, Y, U, Z)</p>
+        </div>
+        <div class="canvas-wrapper">
+            <canvas id="canvas4" width="300" height="300"></canvas>
+            <p>Projection Mode 4: (X, Y, Z, U)</p>
+        </div>
+    </div>
+
+    <div id="shape-name"></div>
+
+    <script type="module">
+        import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
+        import { cubeVertices, cubeEdges } from './shapes/cubeData.js';
+        import { tetrahedronVertices, tetrahedronEdges } from './shapes/tetrahedronData.js';
+        import { tetrahedron4DVertices, tetrahedron4DEdges } from './shapes/tetrahedron4DData.js';
+
+        const canvases = [
+            { canvas: document.getElementById('canvas1'), projectionMode: 1 },
+            { canvas: document.getElementById('canvas2'), projectionMode: 2 },
+            { canvas: document.getElementById('canvas3'), projectionMode: 3 },
+            { canvas: document.getElementById('canvas4'), projectionMode: 4 }
+        ];
+
+        const shapes = [
+            { name: 'Hypercube', vertices: hypercubeVertices.map(v => [...v]), edges: hypercubeEdges, initialVertices: hypercubeVertices.map(v => [...v]) },
+            { name: 'Cube', vertices: cubeVertices.map(v => [...v]), edges: cubeEdges, initialVertices: cubeVertices.map(v => [...v]) },
+            { name: 'Tetrahedron', vertices: tetrahedronVertices.map(v => [...v]), edges: tetrahedronEdges, initialVertices: tetrahedronVertices.map(v => [...v]) },
+            { name: '4D Tetrahedron', vertices: tetrahedron4DVertices.map(v => [...v]), edges: tetrahedron4DEdges, initialVertices: tetrahedron4DVertices.map(v => [...v]) }
+        ];
+
+        let currentShapeIndex = 0;
+        let currentShape = shapes[currentShapeIndex];
+        let scale = 80;
+        const k = 255;
+        const rotationState = { x_y: 0, x_z: 0, x_u: 0, y_z: 0, y_u: 0, z_u: 0 };
+
+        function displayShapeName() {
+            document.getElementById('shape-name').textContent = `Current Shape: ${currentShape.name}`;
+        }
+        displayShapeName();
+
+        function project4DTo2D(vertex, projectionMode, offsetX, offsetY) {
+            let projectedVertex;
+            switch (projectionMode) {
+                case 1: projectedVertex = [vertex[3], vertex[1], vertex[2], vertex[0]]; break;
+                case 2: projectedVertex = [vertex[0], vertex[3], vertex[2], vertex[1]]; break;
+                case 3: projectedVertex = [vertex[0], vertex[1], vertex[3], vertex[2]]; break;
+                case 4: projectedVertex = [vertex[0], vertex[1], vertex[2], vertex[3]]; break;
+            }
+
+            const [x, y, z, u] = projectedVertex;
+            const perspective = 3 - z;
+            const px = (x / perspective) * scale + offsetX;
+            const py = (y / perspective) * scale + offsetY;
+            const color = u < 0 ? `rgb(${k * Math.abs(u)}, 0, 0)` : `rgb(0, 0, ${k * Math.abs(u)})`;
+
+            return { x: px, y: py, color };
+        }
+
+        function drawVerticesAndEdges(ctx, vertices, edges, projectionMode) {
+            const offsetX = ctx.canvas.width / 2;
+            const offsetY = ctx.canvas.height / 2;
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            edges.forEach(([startIdx, endIdx]) => {
+                const startVertex = vertices[startIdx];
+                const endVertex = vertices[endIdx];
+                for (let i = 0; i <= 50; i++) {
+                    const t = i / 50;
+                    const interpolatedVertex = [
+                        startVertex[0] * (1 - t) + endVertex[0] * t,
+                        startVertex[1] * (1 - t) + endVertex[1] * t,
+                        startVertex[2] * (1 - t) + endVertex[2] * t,
+                        startVertex[3] * (1 - t) + endVertex[3] * t,
+                    ];
+                    const { x, y, color } = project4DTo2D(interpolatedVertex, projectionMode, offsetX, offsetY);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 1, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                }
+            });
+
+            vertices.forEach(vertex => {
+                const { x, y, color } = project4DTo2D(vertex, projectionMode, offsetX, offsetY);
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+            });
+        }
+
+        function updateAndDraw() {
+            canvases.forEach(({ canvas, projectionMode }) => {
+                const ctx = canvas.getContext('2d');
+                drawVerticesAndEdges(ctx, currentShape.vertices, currentShape.edges, projectionMode);
+            });
+        }
+
+        function resetToInitialPosition() {
+            currentShape.vertices = currentShape.initialVertices.map(v => [...v]);
+            updateAndDraw();
+        }
+
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'p') {
+                currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
+                currentShape = shapes[currentShapeIndex];
+                displayShapeName();
+                resetToInitialPosition();
+            } else {
+                handleRotationAndZoom(event);
+            }
+        });
+
+        function handleRotationAndZoom(event) {
+            switch (event.key) {
+                case 'q': rotationState.x_y = -1; break;
+                case 'w': rotationState.x_y = 1; break;
+                case 'a': rotationState.x_z = -1; break;
+                case 's': rotationState.x_z = 1; break;
+                case 'e': rotationState.x_u = -1; break;
+                case 'r': rotationState.x_u = 1; break;
+                case 'd': rotationState.y_z = -1; break;
+                case 'f': rotationState.y_z = 1; break;
+                case 'z': rotationState.y_u = -1; break;
+                case 'x': rotationState.y_u = 1; break;
+                case 'c': rotationState.z_u = -1; break;
+                case 'v': rotationState.z_u = 1; break;
+                case '+': scale += 10; break; // Zoom in
+                case '-': scale -= 10; break; // Zoom out
+                case 'l': resetToInitialPosition(); break; // Reset to initial position
+            }
+        }
+
+        window.addEventListener('keyup', (event) => {
+            switch (event.key) {
+                case 'q': case 'w': rotationState.x_y = 0; break;
+                case 'a': case 's': rotationState.x_z = 0; break;
+                case 'e': case 'r': rotationState.x_u = 0; break;
+                case 'd': case 'f': rotationState.y_z = 0; break;
+                case 'z': case 'x': rotationState.y_u = 0; break;
+                case 'c': case 'v': rotationState.z_u = 0; break;
+            }
+        });
+
+        function rotate4D(vertex, angle, axis1, axis2) {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+
+            let rotatedVertex = [...vertex];
+            rotatedVertex[axis1] = cos * vertex[axis1] - sin * vertex[axis2];
+            rotatedVertex[axis2] = sin * vertex[axis1] + cos * vertex[axis2];
+            
+            return rotatedVertex;
+        }
+
+        function animate() {
+            currentShape.vertices = currentShape.vertices.map(vertex => {
+                const angle = 0.02;
+                if (rotationState.x_y) vertex = rotate4D(vertex, rotationState.x_y * angle, 0, 1);
+                if (rotationState.x_z) vertex = rotate4D(vertex, rotationState.x_z * angle, 0, 2);
+                if (rotationState.x_u) vertex = rotate4D(vertex, rotationState.x_u * angle, 0, 3);
+                if (rotationState.y_z) vertex = rotate4D(vertex, rotationState.y_z * angle, 1, 2);
+                if (rotationState.y_u) vertex = rotate4D(vertex, rotationState.y_u * angle, 1, 3);
+                if (rotationState.z_u) vertex = rotate4D(vertex, rotationState.z_u * angle, 2, 3);
+                return vertex;
+            });
+            updateAndDraw();
+            requestAnimationFrame(animate);
+        }
+
+        // アニメーションを開始し、図形データが初期化されたら描画を開始
+        animate();
+    </script>
+</body>
+</html>
+
