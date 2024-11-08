@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation - v2.7</title>
+    <title>4D Hypercube with Generalized Rotation - v2.8</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -46,7 +46,7 @@
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v2.7</div>
+    <div id="version">Code Version: v2.8</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -82,24 +82,19 @@
                 this.vertices2D = vertices.map(vertex4D => {
                     let projectedVertex = this.rotationAxes.map(axis => vertex4D[axis]);
 
-                    // Define separate axes for the rotation and the source projection
                     if (this.rotationState.axis1_axis3) {
                         projectedVertex = rotate4D(
-                            projectedVertex, 
-                            this.rotationState.axis1_axis3 * 0.02, 
-                            this.rotationAxes[0], 
-                            this.rotationAxes[2],
-                            0, 
+                            projectedVertex,
+                            this.rotationState.axis1_axis3 * 0.02,
+                            0,
                             2
                         );
                     }
                     if (this.rotationState.axis2_axis3) {
                         projectedVertex = rotate4D(
-                            projectedVertex, 
-                            this.rotationState.axis2_axis3 * 0.02, 
-                            this.rotationAxes[1], 
-                            this.rotationAxes[2],
-                            1, 
+                            projectedVertex,
+                            this.rotationState.axis2_axis3 * 0.02,
+                            1,
                             2
                         );
                     }
@@ -182,11 +177,12 @@
             }
         }
 
+        // 各キャンバスでの正しい表示座標系の設定
         const canvasDisplays = [
-            new CanvasDisplay(document.getElementById('canvas1'), [3, 1, 2, 0], "Projection Mode 1: (U, Y, Z, X)"),
-            new CanvasDisplay(document.getElementById('canvas2'), [0, 3, 2, 1], "Projection Mode 2: (X, U, Z, Y)"),
-            new CanvasDisplay(document.getElementById('canvas3'), [0, 1, 3, 2], "Projection Mode 3: (X, Y, U, Z)"),
-            new CanvasDisplay(document.getElementById('canvas4'), [0, 1, 2, 3], "Projection Mode 4: (X, Y, Z, U)")
+            new CanvasDisplay(document.getElementById('canvas1'), [0, 1, 2, 3], "Projection Mode 1: (U, Y, Z, X)"),
+            new CanvasDisplay(document.getElementById('canvas2'), [3, 0, 2, 1], "Projection Mode 2: (X, U, Z, Y)"),
+            new CanvasDisplay(document.getElementById('canvas3'), [3, 1, 0, 2], "Projection Mode 3: (X, Y, U, Z)"),
+            new CanvasDisplay(document.getElementById('canvas4'), [3, 1, 2, 0], "Projection Mode 4: (X, Y, Z, U)")
         ];
 
         function updateAndDraw() {
@@ -205,13 +201,13 @@
             updateAndDraw();
         }
 
-        function rotate4D(vertex4D, angle, axis1, axis2, rotate_axis1, rotate_axis2) {
+        function rotate4D(vertex4D, angle, axis1, axis2) {
             const cos = Math.cos(angle);
             const sin = Math.sin(angle);
 
             let rotatedVertex = [...vertex4D];
-            rotatedVertex[rotate_axis1] = cos * vertex4D[axis1] - sin * vertex4D[axis2];
-            rotatedVertex[rotate_axis2] = sin * vertex4D[axis1] + cos * vertex4D[axis2];
+            rotatedVertex[axis1] = cos * vertex4D[axis1] - sin * vertex4D[axis2];
+            rotatedVertex[axis2] = sin * vertex4D[axis1] + cos * vertex4D[axis2];
             
             return rotatedVertex;
         }
