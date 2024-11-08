@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation - v1.5</title>
+    <title>4D Hypercube with Generalized Rotation - v1.6</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -46,7 +46,7 @@
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v1.5</div>
+    <div id="version">Code Version: v1.6</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -90,15 +90,16 @@
             return { x: px, y: py, color };
         }
 
-        function drawVerticesAndEdges(ctx, rotationAxes) {
+        function rotateAndDraw(ctx, rotationAxes) {
             const offsetX = ctx.canvas.width / 2;
             const offsetY = ctx.canvas.height / 2;
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
+            // 頂点の回転と描画
             const rotatedVertices = currentShape.universalVertices4D.map(vertex4D => {
                 let projectedVertex = rotationAxes.map(axis => vertex4D[axis]);
 
-                // 回転を適用
+                // 回転の適用
                 if (rotationState.axis1_axis3) projectedVertex = rotate4D(projectedVertex, rotationState.axis1_axis3 * 0.02, 0, 2);
                 if (rotationState.axis2_axis3) projectedVertex = rotate4D(projectedVertex, rotationState.axis2_axis3 * 0.02, 1, 2);
 
@@ -125,7 +126,7 @@
                 }
             });
 
-            // 頂点の描画
+            // 各頂点の描画
             rotatedVertices.forEach(vertex => {
                 const { x, y, color } = project4DTo2D(vertex, offsetX, offsetY);
                 ctx.beginPath();
@@ -138,7 +139,7 @@
         function updateAndDraw() {
             canvases.forEach(({ canvas, rotationAxes }) => {
                 const ctx = canvas.getContext('2d');
-                drawVerticesAndEdges(ctx, rotationAxes);
+                rotateAndDraw(ctx, rotationAxes);
             });
         }
 
@@ -157,7 +158,7 @@
             canvas.addEventListener('mousemove', (e) => {
                 if (isDragging) {
                     const deltaX = e.clientX - lastX;
-                    const deltaY = e.clientY - lastY;
+                    const deltaY = e.clientY                    - lastY;
                     lastX = e.clientX;
                     lastY = e.clientY;
                     rotationState.axis1_axis3 += deltaX * 0.001;
