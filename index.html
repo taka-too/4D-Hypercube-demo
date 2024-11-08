@@ -64,7 +64,6 @@
         let currentShapeIndex = 0;
         let currentShape = shapes[currentShapeIndex];
         let scale = 100;
-        let projectionMode = 4;
         const k = 255;
         const rotationState = {
             x_y: 0,
@@ -76,9 +75,10 @@
         };
 
         class CanvasDisplay {
-            constructor(canvas, description) {
+            constructor(canvas, rotationAxes, description) {
                 this.canvas = canvas;
                 this.ctx = canvas.getContext('2d');
+                this.rotationAxes = rotationAxes;
                 this.description = description;
                 this.vertices2D = [];
                 this.edgePoints2D = [];
@@ -86,14 +86,7 @@
             }
 
             project4DTo2D(vertex) {
-                let projectedVertex;
-                switch (projectionMode) {
-                    case 1: projectedVertex = [vertex[3], vertex[1], vertex[2], vertex[0]]; break; // (U, Y, Z, X)
-                    case 2: projectedVertex = [vertex[0], vertex[3], vertex[2], vertex[1]]; break; // (X, U, Z, Y)
-                    case 3: projectedVertex = [vertex[0], vertex[1], vertex[3], vertex[2]]; break; // (X, Y, U, Z)
-                    case 4: projectedVertex = [vertex[0], vertex[1], vertex[2], vertex[3]]; break; // (X, Y, Z, U)
-                }
-
+                const projectedVertex = this.rotationAxes.map(axis => vertex[axis]);
                 const [x, y, z, u] = projectedVertex;
                 const perspective = 3 - z;
                 const offsetX = this.canvas.width / 2;
@@ -109,8 +102,8 @@
                 edges.forEach(([startIdx, endIdx]) => {
                     const startVertex = vertices[startIdx];
                     const endVertex = vertices[endIdx];
-                    for (let i = 0; i <= 5; i++) {
-                        const t = i / 5;
+                    for (let i = 0; i <= 50; i++) {  // ドット数を増やす
+                        const t = i / 50;
                         const interpolatedVertex = [
                             startVertex[0] * (1 - t) + endVertex[0] * t,
                             startVertex[1] * (1 - t) + endVertex[1] * t,
@@ -157,10 +150,10 @@
         }
 
         const canvasDisplays = [
-            new CanvasDisplay(document.getElementById('canvas1'), "Projection Mode 1: (U, Y, Z, X)"),
-            new CanvasDisplay(document.getElementById('canvas2'), "Projection Mode 2: (X, U, Z, Y)"),
-            new CanvasDisplay(document.getElementById('canvas3'), "Projection Mode 3: (X, Y, U, Z)"),
-            new CanvasDisplay(document.getElementById('canvas4'), "Projection Mode 4: (X, Y, Z, U)")
+            new CanvasDisplay(document.getElementById('canvas1'), [3, 1, 2, 0], "Projection Mode 1: (U, Y, Z, X)"),
+            new CanvasDisplay(document.getElementById('canvas2'), [0, 3, 2, 1], "Projection Mode 2: (X, U, Z, Y)"),
+            new CanvasDisplay(document.getElementById('canvas3'), [0, 1, 3, 2], "Projection Mode 3: (X, Y, U, Z)"),
+            new CanvasDisplay(document.getElementById('canvas4'), [0, 1, 2, 3], "Projection Mode 4: (X, Y, Z, U)")
         ];
 
         function resetToInitialPosition() {
@@ -169,7 +162,7 @@
         }
 
         function updateAndDraw() {
-            canvasDisplays.forEach(display => {               
+            canvasDisplays.forEach(display => {
                 display.drawVerticesAndEdges(currentShape.vertices, currentShape.edges);
             });
         }
@@ -187,53 +180,4 @@
 
         function animate() {
             currentShape.vertices = currentShape.vertices.map(vertex => {
-                const angle = 0.02;
-                if (rotationState.x_y) vertex = rotate4D(vertex, rotationState.x_y * angle, 0, 1);
-                if (rotationState.x_z) vertex = rotate4D(vertex, rotationState.x_z * angle, 0, 2);
-                if (rotationState.x_u) vertex = rotate4D(vertex, rotationState.x_u * angle, 0, 3);
-                if (rotationState.y_z) vertex = rotate4D(vertex, rotationState.y_z * angle, 1, 2);
-                if (rotationState.y_u) vertex = rotate4D(vertex, rotationState.y_u * angle, 1, 3);
-                if (rotationState.z_u) vertex = rotate4D(vertex, rotationState.z_u * angle, 2, 3);
-                return vertex;
-            });
-            updateAndDraw();
-            requestAnimationFrame(animate);
-        }
-
-        document.getElementById('switchShape').addEventListener('click', () => {
-            currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
-            currentShape = shapes[currentShapeIndex];
-            displayShapeName();
-            resetToInitialPosition();
-        });
-
-        document.getElementById('resetPosition').addEventListener('click', resetToInitialPosition);
-
-        document.getElementById('zoomIn').addEventListener('click', () => {
-            scale += 10;
-            updateAndDraw();
-        });
-
-        document.getElementById('zoomOut').addEventListener('click', () => {
-            scale -= 10;
-            updateAndDraw();
-        });
-
-        function displayShapeName() {
-            document.getElementById('shape-name').textContent = `Current Shape: ${currentShape.name}`;
-        }
-        displayShapeName();
-
-        window.addEventListener('keydown', (event) => {
-            switch (event.key) {
-                case '1': projectionMode = 1; updateAndDraw(); break;
-                case '2': projectionMode = 2; updateAndDraw(); break;
-                case '3': projectionMode = 3; updateAndDraw(); break;
-                case '4': projectionMode = 4; updateAndDraw(); break;
-            }
-        });
-
-        animate();
-    </script>
-</body>
-</html>
+                const angle = 0.
