@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation - v1.4</title>
+    <title>4D Hypercube with Generalized Rotation - v1.5</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -46,7 +46,7 @@
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v1.4</div>
+    <div id="version">Code Version: v1.5</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -80,11 +80,6 @@
         }
         displayShapeName();
 
-        // 汎用的なプロジェクション変換
-        function applyProjection(vertex4D, rotationAxes) {
-            return rotationAxes.map(axis => vertex4D[axis]);
-        }
-
         // 2Dに投影
         function project4DTo2D(vertex4D, offsetX, offsetY) {
             const [x, y, z, u] = vertex4D;
@@ -95,33 +90,34 @@
             return { x: px, y: py, color };
         }
 
-        function drawVerticesAndEdges(ctx, universalVertices4D, edges, rotationAxes) {
+        function drawVerticesAndEdges(ctx, rotationAxes) {
             const offsetX = ctx.canvas.width / 2;
             const offsetY = ctx.canvas.height / 2;
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-            const vertices4D = universalVertices4D.map(vertex4D => {
-                let projectedVertex = applyProjection(vertex4D, rotationAxes);
+            const rotatedVertices = currentShape.universalVertices4D.map(vertex4D => {
+                let projectedVertex = rotationAxes.map(axis => vertex4D[axis]);
 
-                // 回転を適用 - 各プロジェクションの座標軸に基づく
+                // 回転を適用
                 if (rotationState.axis1_axis3) projectedVertex = rotate4D(projectedVertex, rotationState.axis1_axis3 * 0.02, 0, 2);
                 if (rotationState.axis2_axis3) projectedVertex = rotate4D(projectedVertex, rotationState.axis2_axis3 * 0.02, 1, 2);
 
                 return projectedVertex;
             });
 
-            edges.forEach(([startIdx, endIdx]) => {
-                const startVertex4D = vertices4D[startIdx];
-                const endVertex4D = vertices4D[endIdx];
+            // 辺の描画
+            currentShape.edges.forEach(([startIdx, endIdx]) => {
+                const startVertex = rotatedVertices[startIdx];
+                const endVertex = rotatedVertices[endIdx];
                 for (let i = 0; i <= 50; i++) {
                     const t = i / 50;
-                    const interpolatedVertex4D = [
-                        startVertex4D[0] * (1 - t) + endVertex4D[0] * t,
-                        startVertex4D[1] * (1 - t) + endVertex4D[1] * t,
-                        startVertex4D[2] * (1 - t) + endVertex4D[2] * t,
-                        startVertex4D[3] * (1 - t) + endVertex4D[3] * t,
+                    const interpolatedVertex = [
+                        startVertex[0] * (1 - t) + endVertex[0] * t,
+                        startVertex[1] * (1 - t) + endVertex[1] * t,
+                        startVertex[2] * (1 - t) + endVertex[2] * t,
+                        startVertex[3] * (1 - t) + endVertex[3] * t,
                     ];
-                    const { x, y, color } = project4DTo2D(interpolatedVertex4D, offsetX, offsetY);
+                    const { x, y, color } = project4DTo2D(interpolatedVertex, offsetX, offsetY);
                     ctx.beginPath();
                     ctx.arc(x, y, 1, 0, Math.PI * 2);
                     ctx.fillStyle = color;
@@ -129,8 +125,9 @@
                 }
             });
 
-            vertices4D.forEach(vertex4D => {
-                const { x, y, color } = project4DTo2D(vertex4D, offsetX, offsetY);
+            // 頂点の描画
+            rotatedVertices.forEach(vertex => {
+                const { x, y, color } = project4DTo2D(vertex, offsetX, offsetY);
                 ctx.beginPath();
                 ctx.arc(x, y, 5, 0, Math.PI * 2);
                 ctx.fillStyle = color;
@@ -141,7 +138,7 @@
         function updateAndDraw() {
             canvases.forEach(({ canvas, rotationAxes }) => {
                 const ctx = canvas.getContext('2d');
-                drawVerticesAndEdges(ctx, currentShape.universalVertices4D, currentShape.edges, rotationAxes);
+                drawVerticesAndEdges(ctx, rotationAxes);
             });
         }
 
@@ -154,7 +151,7 @@
         canvases.forEach(({ canvas }) => {
             canvas.addEventListener('mousedown', (e) => { 
                 isDragging = true; 
-                lastX = e.clientX;
+                lastX = e.clientX; 
                 lastY = e.clientY; 
             });
             canvas.addEventListener('mousemove', (e) => {
@@ -219,19 +216,8 @@
             return rotatedVertex;
         }
 
+        // アニメーションの簡略化: 各キャンバスに対応する回転と描画を直接呼び出す
         function animate() {
-            currentShape.universalVertices4D = currentShape.universalVertices4D.map(vertex4D => {
-                const angle = 0.02;
-
-                // 各頂点に、回転状態に基づいて回転を適用
-                let rotatedVertex = [...vertex4D];
-
-                if (rotationState.axis1_axis3) rotatedVertex = rotate4D(rotatedVertex, rotationState.axis1_axis3 * angle, 0, 2);
-                if (rotationState.axis2_axis3) rotatedVertex = rotate4D(rotatedVertex, rotationState.axis2_axis3 * angle, 1, 2);
-
-                return rotatedVertex;
-            });
-
             updateAndDraw();
             requestAnimationFrame(animate);
         }
