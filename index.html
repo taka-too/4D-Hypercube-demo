@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation - v3.0.3</title>
+    <title>4D Hypercube with Generalized Rotation - v3.0.4</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -47,7 +47,7 @@
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v3.0.3</div>
+    <div id="version">Code Version: v3.0.4</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -65,7 +65,7 @@
         let currentShapeIndex = 0;
         let currentShape = shapes[currentShapeIndex];
         let scale = 100;
-        let rotationSpeed = 0.01; // 初期回転速度
+        let rotationSpeed = 0.01; // 回転速度の初期値
         const k = 255;
         const rotationState = {
             x_y: 0,
@@ -81,12 +81,12 @@
                 this.canvas = canvas;
                 this.ctx = canvas.getContext('2d');
                 this.rotationAxes = rotationAxes;
-                this.rotationPair = rotationPair; // 各キャンバスの回転軸の組み合わせ
+                this.rotationPair = rotationPair;
                 this.description = description;
                 this.vertices2D = [];
                 this.edgePoints2D = [];
                 this.initDrag();
-                this.initTouch(); // タッチ操作の初期化
+                this.initTouch();
             }
 
             project4DTo2D(vertex) {
@@ -145,6 +145,7 @@
                         lastX = e.clientX;
                         lastY = e.clientY;
 
+                        rotationSpeed = 0.01; // ドラッグ開始時に回転速度を再初期化
                         this.applyRotation(deltaX, deltaY);
                     }
                 });
@@ -166,12 +167,12 @@
                     lastX = touch.clientX;
                     lastY = touch.clientY;
 
+                    rotationSpeed = 0.01; // タッチ開始時に回転速度を再初期化
                     this.applyRotation(deltaX, deltaY);
                 });
             }
 
             applyRotation(deltaX, deltaY) {
-                // 各キャンバスごとに回転軸を設定
                 if (this.canvas.id === 'canvas1') {
                     rotationState.z_u += deltaX * 0.05;
                     rotationState.y_z += deltaY * 0.05;
