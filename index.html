@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation and Translation - v3.1.3</title>
+    <title>4D Hypercube with Generalized Rotation and Translation - v3.1.4</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -12,6 +12,7 @@
         #controls { margin-top: 20px; text-align: center; }
         button, input[type="range"] { margin: 5px; }
         #instructions, #shape-name, #version, #dynamic-controls { font-family: Arial, sans-serif; color: black; margin-top: 10px; text-align: center; }
+        #mode-indicator { font-weight: bold; color: blue; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -52,7 +53,8 @@
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v3.1.3</div>
+    <div id="mode-indicator">Current Mode: Rotation</div>
+    <div id="version">Code Version: v3.1.4</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -310,6 +312,7 @@
 
         document.getElementById('toggleMode').addEventListener('click', () => {
             mode = (mode === 'rotation') ? 'translation' : 'rotation';
+            document.getElementById('mode-indicator').textContent = `Current Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
         });
 
         document.getElementById('vertexSizeSlider').addEventListener('input', (e) => {
