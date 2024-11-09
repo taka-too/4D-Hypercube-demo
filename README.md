@@ -1,4 +1,4 @@
-# 4D Hypercube with Generalized Rotation and Translation - v3.1.9
+# 4D Hypercube with Generalized Rotation and Translation
 
 ## Overview
 This project visualizes various 4D geometrical shapes using HTML5 Canvas and JavaScript. The core concept revolves around rendering a 4D hypercube, as well as other 4D and 3D shapes, by projecting them into 2D space with generalized rotation and translation features. The main features include multiple projection modes, rotation, and translation controls for better interaction and understanding of higher-dimensional structures.
@@ -54,12 +54,6 @@ To use this project:
 
 ## Demo
 Check out the live demo of this project: [4D Hypercube Demo](https://taka-too.github.io/4D-Hypercube-demo/)
-
-## Version Information
-- **Current Version**: v3.1.9
-  - Improved projection consistency across all canvases.
-  - Continuous rotation updates applied to all axes.
-  - Maintained object-oriented structure and mouse-based interaction features.
 
 ## License
 This project is open-source and distributed under the MIT License. Feel free to use, modify, and distribute it as needed.
