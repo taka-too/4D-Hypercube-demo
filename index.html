@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation - v3.0.7</title>
+    <title>4D Hypercube with Generalized Rotation - v3.0.8</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -47,7 +47,7 @@
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v3.0.7</div>
+    <div id="version">Code Version: v3.0.8</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -62,8 +62,8 @@
             { name: 'Cube', vertices: cubeVertices.map(v => [...v]), edges: cubeEdges, initialVertices: cubeVertices.map(v => [...v]) },
             { name: 'Tetrahedron', vertices: tetrahedronVertices.map(v => [...v]), edges: tetrahedronEdges, initialVertices: tetrahedronVertices.map(v => [...v]) },
             { name: '4D Tetrahedron', vertices: tetrahedron4DVertices.map(v => [...v]), edges: tetrahedron4DEdges, initialVertices: tetrahedron4DVertices.map(v => [...v]) },
-            { name: 'sphere', vertices: sphereVertices.map(v => [...v]), edges: sphereEdges, initialVertices: sphereVertices.map(v => [...v]) },
-            { name: 'hypersphere', vertices: hypersphereVertices.map(v => [...v]), edges: hypersphereEdges, initialVertices: hypersphereVertices.map(v => [...v]) }
+            { name: 'Sphere', vertices: sphereVertices.map(v => [...v]), edges: sphereEdges, initialVertices: sphereVertices.map(v => [...v]), pointCount: 20, pointSize: 2 },
+            { name: 'Hypersphere', vertices: hypersphereVertices.map(v => [...v]), edges: hypersphereEdges, initialVertices: hypersphereVertices.map(v => [...v]), pointCount: 10, pointSize: 1.5 }
         ];
 
         let currentShapeIndex = 0;
@@ -107,11 +107,16 @@
 
             drawVerticesAndEdges(vertices, edges) {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // `pointCount`および`pointSize`が存在する場合に使用、デフォルト値は50と1
+                const pointCount = currentShape.pointCount || 50;
+                const pointSize = currentShape.pointSize || 1;
+
                 edges.forEach(([startIdx, endIdx]) => {
                     const startVertex = vertices[startIdx];
                     const endVertex = vertices[endIdx];
-                    for (let i = 0; i <= 50; i++) {
-                        const t = i / 50;
+                    for (let i = 0; i <= pointCount; i++) {
+                        const t = i / pointCount;
                         const interpolatedVertex = [
                             startVertex[0] * (1 - t) + endVertex[0] * t,
                             startVertex[1] * (1 - t) + endVertex[1] * t,
@@ -120,7 +125,7 @@
                         ];
                         const { x, y, color } = this.project4DTo2D(interpolatedVertex);
                         this.ctx.beginPath();
-                        this.ctx.arc(x, y, 1, 0, Math.PI * 2);
+                        this.ctx.arc(x, y, pointSize, 0, Math.PI * 2);
                         this.ctx.fillStyle = color;
                         this.ctx.fill();
                     }
