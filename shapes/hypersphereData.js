@@ -6,8 +6,8 @@ export const hypersphereVertices = (() => {
 
     // Parameters for hypersphere
     const radius = 1;
-    const psiCount = 6;  // Reduced number of 4D rings (excluding poles)
-    const thetaCount = 6; // Reduced number of latitude rings in each 3D sphere
+    const psiCount = 6;  // Number of 4D rings (excluding poles)
+    const thetaCount = 6; // Number of latitude rings in each 3D sphere
     const pointsPerRing = 8; // Points per latitude ring
 
     // Generate vertices for each 3D sphere layer at each psi angle
@@ -63,9 +63,16 @@ export const hypersphereEdges = (() => {
                 const nextPointInRing = ringStart + (k + 1) % pointsPerRing;
                 edges.push([currentPoint, nextPointInRing]);  // Connect to next point in ring
 
+                // Connect to corresponding point in the next ring within the same sphere
                 if (j < thetaCount - 1) {
                     const nextRingPoint = nextRingStart + k;
                     edges.push([currentPoint, nextRingPoint]);  // Connect to corresponding point in next ring
+                }
+
+                // Connect to the same latitude and longitude point in the next 3D sphere layer (U direction)
+                if (i < psiCount - 1) {
+                    const correspondingPointInNextLayer = nextLayerStart + j * pointsPerRing + k;
+                    edges.push([currentPoint, correspondingPointInNextLayer]);
                 }
             }
         }
