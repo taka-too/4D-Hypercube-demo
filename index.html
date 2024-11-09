@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation - v3.0.5</title>
+    <title>4D Hypercube with Generalized Rotation - v3.0.6</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -47,7 +47,7 @@
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v3.0.5</div>
+    <div id="version">Code Version: v3.0.6</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -67,7 +67,7 @@
         let scale = 100;
         let rotationSpeed = 0.01; // 初期回転速度
         const k = 255;
-        const rotationState = {
+        let rotationState = {
             x_y: 0,
             x_z: 0,
             x_u: 0,
@@ -255,6 +255,7 @@
 
         document.getElementById('stopRotation').addEventListener('click', () => {
             rotationSpeed = 0; // 回転速度を0にして停止
+            rotationState = { x_y: 0, x_z: 0, x_u: 0, y_z: 0, y_u: 0, z_u: 0 }; // 回転ベクトルをリセット
         });
 
         function displayShapeName() {
