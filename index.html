@@ -54,14 +54,16 @@
         import { cubeVertices, cubeEdges } from './shapes/cubeData.js';
         import { tetrahedronVertices, tetrahedronEdges } from './shapes/tetrahedronData.js';
         import { tetrahedron4DVertices, tetrahedron4DEdges } from './shapes/tetrahedron4DData.js';
-        import { sphereVertices, sphereEdges } from './shapes/sphere.js';
+        import { sphereVertices, sphereEdges } from './shapes/sphereData.js';
+        import { hypersphereVertices, hypersphereEdges } from './shapes/hypersphereData.js';
 
         const shapes = [
             { name: 'Hypercube', vertices: hypercubeVertices.map(v => [...v]), edges: hypercubeEdges, initialVertices: hypercubeVertices.map(v => [...v]) },
             { name: 'Cube', vertices: cubeVertices.map(v => [...v]), edges: cubeEdges, initialVertices: cubeVertices.map(v => [...v]) },
             { name: 'Tetrahedron', vertices: tetrahedronVertices.map(v => [...v]), edges: tetrahedronEdges, initialVertices: tetrahedronVertices.map(v => [...v]) },
             { name: '4D Tetrahedron', vertices: tetrahedron4DVertices.map(v => [...v]), edges: tetrahedron4DEdges, initialVertices: tetrahedron4DVertices.map(v => [...v]) },
-            { name: 'sphere', vertices: sphereVertices.map(v => [...v]), edges: sphereEdges, initialVertices: sphereVertices.map(v => [...v]) }
+            { name: 'sphere', vertices: sphereVertices.map(v => [...v]), edges: sphereEdges, initialVertices: sphereVertices.map(v => [...v]) },
+            { name: 'hypersphere', vertices: hypersphereVertices.map(v => [...v]), edges: hypersphereEdges, initialVertices: hypersphereVertices.map(v => [...v]) }
         ];
 
         let currentShapeIndex = 0;
