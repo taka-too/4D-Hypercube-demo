@@ -54,7 +54,7 @@
 
     <div id="shape-name"></div>
     <div id="mode-indicator">Current Mode: Rotation</div>
-    <div id="version">Code Version: v3.1.8</div>
+    <div id="version">Code Version: v3.1.9</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -229,17 +229,17 @@
 
             applyTranslation(deltaX, deltaY) {
                 if (this.canvas.id === 'canvas1') {
-                    translationState.u += deltaX * translationSpeed * 0.05;
-                    translationState.y += deltaY * translationSpeed * 0.05;
+                    translationState.x += deltaX * translationSpeed * 0.005;
+                    translationState.x += deltaY * translationSpeed * 0.005;
                 } else if (this.canvas.id === 'canvas2') {
-                    translationState.x += deltaX * translationSpeed * 0.05;
-                    translationState.u += deltaY * translationSpeed * 0.05;
+                    translationState.y += deltaX * translationSpeed * 0.005;
+                    translationState.y += deltaY * translationSpeed * 0.005;
                 } else if (this.canvas.id === 'canvas3') {
-                    translationState.u += deltaX * translationSpeed * 0.05;
-                    translationState.z += deltaY * translationSpeed * 0.05;
+                    translationState.z += deltaX * translationSpeed * 0.005;
+                    translationState.z += deltaY * translationSpeed * 0.005;
                 } else if (this.canvas.id === 'canvas4') {
-                    translationState.x += deltaX * translationSpeed * 0.05;
-                    translationState.y += deltaY * translationSpeed * 0.05;
+                    translationState.u += deltaX * translationSpeed * 0.005;
+                    translationState.u += deltaY * translationSpeed * 0.005;
                 }
             }
         }
