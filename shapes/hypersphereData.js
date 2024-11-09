@@ -27,7 +27,7 @@ class Vertex {
                 layer_previous: "layer_next"
             };
             // Set reciprocal connection only if not already set
-            if (!otherVertex.connections[reciprocalName[name]].includes(this.index)) {
+            if (reciprocalName[name] in otherVertex.connections && !otherVertex.connections[reciprocalName[name]].includes(this.index)) {
                 otherVertex.connections[reciprocalName[name]].push(this.index);
             }
         }
@@ -56,6 +56,13 @@ class Ring {
                 this.vertices[i].addConnection("ring_next", this.vertices[i + 1]);
             }
         }
+
+        // Set up ring_previous connections based on ring_next connections
+        for (let i = 0; i < this.vertices.length; i++) {
+            const nextVertex = this.vertices[i].connections["ring_next"][0];
+            const currentVertex = this.vertices[i];
+            currentVertex.addConnection("ring_previous", this.vertices[nextVertex]);
+        }
     }
 }
 
@@ -82,6 +89,15 @@ class Layer {
             const nextRing = nextLayer.rings[i];
             for (let j = 0; j < ring.vertices.length; j++) {
                 ring.vertices[j].addConnection("layer_next", nextRing.vertices[j]);
+            }
+        }
+
+        // Set up layer_previous connections based on layer_next connections
+        for (let i = 0; i < this.rings.length; i++) {
+            const ring = this.rings[i];
+            const nextRing = nextLayer.rings[i];
+            for (let j = 0; j < ring.vertices.length; j++) {
+                nextRing.vertices[j].addConnection("layer_previous", ring.vertices[j]);
             }
         }
     }
@@ -246,4 +262,5 @@ console.log({
     hypersphereVertices,
     hypersphereEdges
 });
+
 // EOF
