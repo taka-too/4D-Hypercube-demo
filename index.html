@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation and Translation - v3.2.0</title>
+    <title>4D Hypercube with Generalized Rotation and Translation - v3.3.0</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -23,19 +23,19 @@
     <div class="canvas-container">
         <div class="canvas-wrapper">
             <canvas id="canvas1" width="300" height="300"></canvas>
-            <p>Projection Mode 1: (U, Y, Z, X)</p>
+            <p>Projection Mode 1: (W, Y, Z, X)</p>
         </div>
         <div class="canvas-wrapper">
             <canvas id="canvas2" width="300" height="300"></canvas>
-            <p>Projection Mode 2: (X, U, Z, Y)</p>
+            <p>Projection Mode 2: (X, W, Z, Y)</p>
         </div>
         <div class="canvas-wrapper">
             <canvas id="canvas3" width="300" height="300"></canvas>
-            <p>Projection Mode 3: (X, Y, U, Z)</p>
+            <p>Projection Mode 3: (X, Y, W, Z)</p>
         </div>
         <div class="canvas-wrapper">
             <canvas id="canvas4" width="300" height="300"></canvas>
-            <p>Projection Mode 4: (X, Y, Z, U)</p>
+            <p>Projection Mode 4: (X, Y, Z, W)</p>
         </div>
     </div>
 
@@ -44,7 +44,7 @@
         <button id="resetPosition">Reset Position</button>
         <button id="zoomIn">Zoom In</button>
         <button id="zoomOut">Zoom Out</button>
-        <button id="stopRotation">Stop Rotation</button>
+        <button id="stop">Stop Rotation</button>
         <button id="toggleMode">Toggle Mode (Rotation/Translation)</button>
         <div id="dynamic-controls">
             <label>Vertex Size: <input type="range" id="vertexSizeSlider" min="1" max="10" step="0.5" value="5"></label>
@@ -53,7 +53,7 @@
 
     <div id="shape-name"></div>
     <div id="mode-indicator">Current Mode: Rotation</div>
-    <div id="version">Code Version: v3.2.0</div>
+    <div id="version">Code Version: v3.3.0</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -86,14 +86,14 @@
         let rotationState = {
             x_y: 0,
             x_z: 0,
-            x_u: 0,
+            x_w: 0,
             y_z: 0,
-            y_u: 0,
-            z_u: 0
+            y_w: 0,
+            z_w: 0
         };
 
         let translationState = {
-            u: 0,
+            w: 0,
             x: 0,
             y: 0,
             z: 0
@@ -114,13 +114,13 @@
             project4DTo2D(vertex) {
                 const translatedVertex = this.translate4D([...vertex]);
                 const projectedVertex = this.rotationAxes.map(axis => translatedVertex[axis]);
-                const [x, y, z, u] = projectedVertex;
+                const [x, y, z, w] = projectedVertex;
                 const perspective = 3 - z;
                 const offsetX = this.canvas.width / 2;
                 const offsetY = this.canvas.height / 2;
                 const px = (x / perspective) * scale + offsetX;
                 const py = (y / perspective) * scale + offsetY;
-                const color = u < 0 ? `rgb(${k * Math.abs(u)}, 0, 0)` : `rgb(0, 0, ${k * Math.abs(u)})`;
+                const color = w < 0 ? `rgb(${k * Math.abs(w)}, 0, 0)` : `rgb(0, 0, ${k * Math.abs(w)})`;
                 return { x: px, y: py, color };
             }
 
@@ -159,7 +159,7 @@
                 vertices.forEach(vertex => {
                     const { x, y, color } = this.project4DTo2D(vertex);
                     this.ctx.beginPath();
-                    this.ctx.arc(x, y, vertexSize, 0, Math.PI * 2); // 頂点に対して動的サイズを適用
+                    this.ctx.arc(x, y, vertexSize, 0, Math.PI * 2); // Apply dynamic size to vertices
                     this.ctx.fillStyle = color;
                     this.ctx.fill();
                 });
@@ -214,14 +214,14 @@
 
             applyRotation(deltaX, deltaY) {
                 if (this.canvas.id === 'canvas1') {
-                    rotationState.z_u += deltaX * 0.05;
+                    rotationState.z_w += deltaX * 0.05;
                     rotationState.y_z += deltaY * 0.05;
                 } else if (this.canvas.id === 'canvas2') {
                     rotationState.x_z += deltaX * 0.05;
-                    rotationState.z_u += deltaY * 0.05;
+                    rotationState.z_w += deltaY * 0.05;
                 } else if (this.canvas.id === 'canvas3') {
-                    rotationState.x_u += deltaX * 0.05;
-                    rotationState.y_u += deltaY * 0.05;
+                    rotationState.x_w += deltaX * 0.05;
+                    rotationState.y_w += deltaY * 0.05;
                 } else if (this.canvas.id === 'canvas4') {
                     rotationState.x_z += deltaX * 0.05;
                     rotationState.y_z += deltaY * 0.05;
@@ -239,22 +239,22 @@
                     translationState.z += deltaX * translationSpeed * 0.005;
                     translationState.z += deltaY * translationSpeed * 0.005;
                 } else if (this.canvas.id === 'canvas4') {
-                    translationState.u += deltaX * translationSpeed * 0.005;
-                    translationState.u += deltaY * translationSpeed * 0.005;
+                    translationState.w += deltaX * translationSpeed * 0.005;
+                    translationState.w += deltaY * translationSpeed * 0.005;
                 }
             }
         }
 
         const canvasDisplays = [
-            new CanvasDisplay(document.getElementById('canvas1'), [3, 1, 2, 0], ['u', 'y'], [0, 2], "Projection Mode 1: (U, Y, Z, X)"),
-            new CanvasDisplay(document.getElementById('canvas2'), [0, 3, 2, 1], ['x', 'u'], [0, 2], "Projection Mode 2: (X, U, Z, Y)"),
-            new CanvasDisplay(document.getElementById('canvas3'), [0, 1, 3, 2], ['u', 'z'], [0, 3], "Projection Mode 3: (X, Y, U, Z)"),
-            new CanvasDisplay(document.getElementById('canvas4'), [0, 1, 2, 3], ['x', 'y'], [0, 2], "Projection Mode 4: (X, Y, Z, U)")
+            new CanvasDisplay(document.getElementById('canvas1'), [3, 1, 2, 0], ['w', 'y'], [0, 2], "Projection Mode 1: (W, Y, Z, X)"),
+            new CanvasDisplay(document.getElementById('canvas2'), [0, 3, 2, 1], ['x', 'w'], [0, 2], "Projection Mode 2: (X, W, Z, Y)"),
+            new CanvasDisplay(document.getElementById('canvas3'), [0, 1, 3, 2], ['w', 'z'], [0, 3], "Projection Mode 3: (X, Y, W, Z)"),
+            new CanvasDisplay(document.getElementById('canvas4'), [0, 1, 2, 3], ['x', 'y'], [0, 2], "Projection Mode 4: (X, Y, Z, W)")
         ];
 
         function resetToInitialPosition() {
             currentShape.vertices = currentShape.initialVertices.map(v => [...v]);
-            translationState = { u: 0, x: 0, y: 0, z: 0 }; // Reset translations to the origin
+            translationState = { w: 0, x: 0, y: 0, z: 0 }; // Reset translations to the origin
             updateAndDraw();
         }
 
@@ -270,7 +270,7 @@
             translatedVertex[0] += translationState.x;
             translatedVertex[1] += translationState.y;
             translatedVertex[2] += translationState.z;
-            translatedVertex[3] += translationState.u;
+            translatedVertex[3] += translationState.w;
             return translatedVertex;
         }
 
@@ -291,10 +291,10 @@
                 if (rotationSpeed > 0) {
                     if (rotationState.x_y) transformedVertex = rotate4D(transformedVertex, rotationState.x_y * rotationSpeed, 0, 1, 0, 1);
                     if (rotationState.x_z) transformedVertex = rotate4D(transformedVertex, rotationState.x_z * rotationSpeed, 0, 2, 0, 2);
-                    if (rotationState.x_u) transformedVertex = rotate4D(transformedVertex, rotationState.x_u * rotationSpeed, 0, 3, 0, 3);
+                    if (rotationState.x_w) transformedVertex = rotate4D(transformedVertex, rotationState.x_w * rotationSpeed, 0, 3, 0, 3);
                     if (rotationState.y_z) transformedVertex = rotate4D(transformedVertex, rotationState.y_z * rotationSpeed, 1, 2, 1, 2);
-                    if (rotationState.y_u) transformedVertex = rotate4D(transformedVertex, rotationState.y_u * rotationSpeed, 1, 3, 1, 3);
-                    if (rotationState.z_u) transformedVertex = rotate4D(transformedVertex, rotationState.z_u * rotationSpeed, 2, 3, 2, 3);
+                    if (rotationState.y_w) transformedVertex = rotate4D(transformedVertex, rotationState.y_w * rotationSpeed, 1, 3, 1, 3);
+                    if (rotationState.z_w) transformedVertex = rotate4D(transformedVertex, rotationState.z_w * rotationSpeed, 2, 3, 2, 3);
                 }
                 return translate4D(transformedVertex);
             });
@@ -321,8 +321,10 @@
             updateAndDraw();
         });
 
-        document.getElementById('stopRotation').addEventListener('click', () => {
-            rotationState = { x_y: 0, x_z: 0, x_u: 0, y_z: 0, y_u: 0, z_u: 0 };
+        document.getElementById('stop').addEventListener('click', () => {
+            rotationState = { x_y: 0, x_z: 0, x_w: 0, y_z: 0, y_w: 0, z_w: 0 };
+            translationState = { w: 0, x: 0, y: 0, z: 0 };
+        });
         });
 
         document.getElementById('toggleMode').addEventListener('click', () => {
