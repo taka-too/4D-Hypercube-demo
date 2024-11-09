@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation and Translation - v3.1.6</title>
+    <title>4D Hypercube with Generalized Rotation and Translation - v3.1.8</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -54,7 +54,7 @@
 
     <div id="shape-name"></div>
     <div id="mode-indicator">Current Mode: Rotation</div>
-    <div id="version">Code Version: v3.1.6</div>
+    <div id="version">Code Version: v3.1.8</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -111,11 +111,7 @@
             }
 
             project4DTo2D(vertex) {
-                const translatedVertex = [...vertex];
-                if (mode === 'translation') {
-                    translatedVertex[this.translationAxes[0]] += translationState[this.translationAxes[0]];
-                    translatedVertex[this.translationAxes[1]] += translationState[this.translationAxes[1]];
-                }
+                const translatedVertex = this.translate4D([...vertex]);
                 const projectedVertex = this.rotationAxes.map(axis => translatedVertex[axis]);
                 const [x, y, z, u] = projectedVertex;
                 const perspective = 3 - z;
@@ -125,6 +121,14 @@
                 const py = (y / perspective) * scale + offsetY;
                 const color = u < 0 ? `rgb(${k * Math.abs(u)}, 0, 0)` : `rgb(0, 0, ${k * Math.abs(u)})`;
                 return { x: px, y: py, color };
+            }
+
+            translate4D(vertex) {
+                if (mode === 'translation') {
+                    vertex[this.translationAxes[0]] += translationState[this.translationAxes[0]];
+                    vertex[this.translationAxes[1]] += translationState[this.translationAxes[1]];
+                }
+                return vertex;
             }
 
             drawVerticesAndEdges(vertices, edges) {
@@ -157,6 +161,8 @@
                     this.ctx.arc(x, y, vertexSize, 0, Math.PI * 2); // 頂点に対して動的サイズを適用
                     this.ctx.fillStyle = color;
                     this.ctx.fill();
+                });
+                this.ctx.fill();
                 });
             }
 
@@ -254,9 +260,19 @@
         }
 
         function updateAndDraw() {
+            currentShape.vertices = currentShape.vertices.map(vertex => translate4D(vertex));
             canvasDisplays.forEach(display => {
                 display.drawVerticesAndEdges(currentShape.vertices, currentShape.edges);
             });
+        }
+
+        function translate4D(vertex) {
+            const translatedVertex = [...vertex];
+            translatedVertex[0] += translationState.x;
+            translatedVertex[1] += translationState.y;
+            translatedVertex[2] += translationState.z;
+            translatedVertex[3] += translationState.u;
+            return translatedVertex;
         }
 
         function rotate4D(vertex, angle, axis1, axis2, rotate_axis1, rotate_axis2) {
@@ -272,15 +288,16 @@
 
         function animate() {
             currentShape.vertices = currentShape.vertices.map(vertex => {
+                let transformedVertex = [...vertex];
                 if (rotationSpeed > 0) {
-                    if (rotationState.x_y) vertex = rotate4D(vertex, rotationState.x_y * rotationSpeed, 0, 1, 0, 1);
-                    if (rotationState.x_z) vertex = rotate4D(vertex, rotationState.x_z * rotationSpeed, 0, 2, 0, 2);
-                    if (rotationState.x_u) vertex = rotate4D(vertex, rotationState.x_u * rotationSpeed, 0, 3, 0, 3);
-                    if (rotationState.y_z) vertex = rotate4D(vertex, rotationState.y_z * rotationSpeed, 1, 2, 1, 2);
-                    if (rotationState.y_u) vertex = rotate4D(vertex, rotationState.y_u * rotationSpeed, 1, 3, 1, 3);
-                    if (rotationState.z_u) vertex = rotate4D(vertex, rotationState.z_u * rotationSpeed, 2, 3, 2, 3);
+                    if (rotationState.x_y) transformedVertex = rotate4D(transformedVertex, rotationState.x_y * rotationSpeed, 0, 1, 0, 1);
+                    if (rotationState.x_z) transformedVertex = rotate4D(transformedVertex, rotationState.x_z * rotationSpeed, 0, 2, 0, 2);
+                    if (rotationState.x_u) transformedVertex = rotate4D(transformedVertex, rotationState.x_u * rotationSpeed, 0, 3, 0, 3);
+                    if (rotationState.y_z) transformedVertex = rotate4D(transformedVertex, rotationState.y_z * rotationSpeed, 1, 2, 1, 2);
+                    if (rotationState.y_u) transformedVertex = rotate4D(transformedVertex, rotationState.y_u * rotationSpeed, 1, 3, 1, 3);
+                    if (rotationState.z_u) transformedVertex = rotate4D(transformedVertex, rotationState.z_u * rotationSpeed, 2, 3, 2, 3);
                 }
-                return vertex;
+                return translate4D(transformedVertex);
             });
             updateAndDraw();
             requestAnimationFrame(animate);
