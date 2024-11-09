@@ -6,8 +6,8 @@ export const sphereVertices = (() => {
 
     // Parameters for sphere
     const radius = 1;
-    const ringCount = 18; // Excluding poles
-    const pointsPerRing = 20; // Points per latitude ring
+    const ringCount = 8; // Excluding poles
+    const pointsPerRing = 10; // Points per latitude ring
 
     // Generate vertices for each latitude ring (excluding poles)
     for (let i = 1; i <= ringCount; i++) {
