@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation and Translation - v3.1.9</title>
+    <title>4D Hypercube with Generalized Rotation and Translation - v3.2.0</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -53,7 +53,7 @@
 
     <div id="shape-name"></div>
     <div id="mode-indicator">Current Mode: Rotation</div>
-    <div id="version">Code Version: v3.1.9</div>
+    <div id="version">Code Version: v3.2.0</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -62,6 +62,7 @@
         import { tetrahedron4DVertices, tetrahedron4DEdges } from './shapes/tetrahedron4DData.js';
         import { sphereVertices, sphereEdges } from './shapes/sphereData.js';
         import { hypersphereVertices, hypersphereEdges } from './shapes/hypersphereData.js';
+        import { cell24Vertices, cell24Edges } from './shapes/cell24Data.js';
 
         const shapes = [
             { name: 'Hypercube', vertices: hypercubeVertices.map(v => [...v]), edges: hypercubeEdges, initialVertices: hypercubeVertices.map(v => [...v]) },
@@ -69,7 +70,8 @@
             { name: 'Tetrahedron', vertices: tetrahedronVertices.map(v => [...v]), edges: tetrahedronEdges, initialVertices: tetrahedronVertices.map(v => [...v]) },
             { name: '4D Tetrahedron', vertices: tetrahedron4DVertices.map(v => [...v]), edges: tetrahedron4DEdges, initialVertices: tetrahedron4DVertices.map(v => [...v]) },
             { name: 'Sphere', vertices: sphereVertices.map(v => [...v]), edges: sphereEdges, initialVertices: sphereVertices.map(v => [...v]), pointCount: 20, pointSize: 2 },
-            { name: 'Hypersphere', vertices: hypersphereVertices.map(v => [...v]), edges: hypersphereEdges, initialVertices: hypersphereVertices.map(v => [...v]), pointCount: 10, pointSize: 1.5 }
+            { name: 'Hypersphere', vertices: hypersphereVertices.map(v => [...v]), edges: hypersphereEdges, initialVertices: hypersphereVertices.map(v => [...v]), pointCount: 10, pointSize: 1.5 },
+            { name: '24cell', vertices: cell24Vertices.map(v => [...v]), edges: cell24Edges, initialVertices: cell24Vertices.map(v => [...v]), pointCount: 10, pointSize: 1.5 }
         ];
 
         let currentShapeIndex = 0;
