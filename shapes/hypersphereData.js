@@ -1,89 +1,115 @@
-// Define vertices and edges for a 4D hypersphere in (x, y, z, u) coordinates
-export const hypersphereVertices = (() => {
-    const vertices = [
-        [0, 0, 0, 1],  // North pole
-    ];
-
-    // Parameters for hypersphere
-    const radius = 1;
-    const psiCount = 6;  // Number of 4D rings (excluding poles)
-    const thetaCount = 6; // Number of latitude rings in each 3D sphere
-    const pointsPerRing = 8; // Points per latitude ring
-
-    // Generate vertices for each 3D sphere layer at each psi angle
-    for (let i = 1; i <= psiCount; i++) {
-        const psi = (Math.PI * i) / (psiCount + 1);  // 4D latitude angle
-        const u = radius * Math.cos(psi);            // w-coordinate
-        const r3d = radius * Math.sin(psi);          // Radius of 3D sphere at this w-coordinate
-
-        // Generate 3D sphere points at this psi layer
-        for (let j = 0; j <= thetaCount; j++) {
-            const theta = (Math.PI * j) / thetaCount;  // Latitude angle in 3D sphere
-            const y = r3d * Math.cos(theta);           // y-coordinate in 3D sphere
-            const r2d = r3d * Math.sin(theta);         // Radius for xz-plane
-
-            // Generate points around this ring (longitude in 3D sphere)
-            for (let k = 0; k < pointsPerRing; k++) {
-                const phi = (2 * Math.PI * k) / pointsPerRing;  // Longitude angle
-                const x = r2d * Math.cos(phi);                  // x-coordinate
-                const z = r2d * Math.sin(phi);                  // z-coordinate
-                vertices.push([x, y, z, u]);
-            }
-        }
+// Define a Layer class to manage vertices and edges within each layer
+class Layer {
+    constructor(layerIndex, vertices) {
+        this.layerIndex = layerIndex;
+        this.vertices = vertices;  // List of vertex indices in this layer
+        this.edges = [];  // List to store edges within this layer
     }
 
-    // Add south pole
-    vertices.push([0, 0, 0, -1]);  // South pole
+    addEdge(v1, v2) {
+        this.edges.push([v1, v2]);
+    }
 
-    return vertices;
-})();
+    connectTo(otherLayer, pointPairs) {
+        // Connect points in this layer to corresponding points in another layer
+        for (let [p1, p2] of pointPairs) {
+            this.addEdge(this.vertices[p1], otherLayer.vertices[p2]);
+            otherLayer.addEdge(otherLayer.vertices[p2], this.vertices[p1]);
+        }
+    }
+}
 
-export const hypersphereEdges = (() => {
-    const edges = [];
+// Main function to generate vertices and edges for the hypersphere
+function generateHypersphereData() {
+    const vertices = [[0, 0, 0, 1]];  // North pole
+    const layers = [];
     const psiCount = 6;
     const thetaCount = 6;
     const pointsPerRing = 8;
+    const radius = 1;
+    let vertexIndex = 1;
 
-    // Connect north pole to the first 3D sphere layer
-    for (let j = 0; j < pointsPerRing; j++) {
-        edges.push([0, j + 1]);  // 0 is the north pole
-    }
-
-    // Connect each 3D sphere's rings and corresponding points to the next 3D sphere
+    // Generate vertices for each 3D sphere layer at each psi angle
     for (let i = 0; i < psiCount; i++) {
-        const layerStart = 1 + i * thetaCount * pointsPerRing;
-        const nextLayerStart = layerStart + thetaCount * pointsPerRing;
+        const layerVertices = [];
+        const psi = (Math.PI * (i + 1)) / (psiCount + 1);
+        const u = radius * Math.cos(psi);
+        const r3d = radius * Math.sin(psi);
 
-        for (let j = 0; j < thetaCount; j++) {
-            const ringStart = layerStart + j * pointsPerRing;
-            const nextRingStart = ringStart + pointsPerRing;
+        for (let j = 0; j <= thetaCount; j++) {
+            const theta = (Math.PI * j) / thetaCount;
+            const y = r3d * Math.cos(theta);
+            const r2d = r3d * Math.sin(theta);
 
             for (let k = 0; k < pointsPerRing; k++) {
-                const currentPoint = ringStart + k;
-                const nextPointInRing = ringStart + (k + 1) % pointsPerRing;
-                edges.push([currentPoint, nextPointInRing]);  // Connect to next point in ring
+                const phi = (2 * Math.PI * k) / pointsPerRing;
+                const x = r2d * Math.cos(phi);
+                const z = r2d * Math.sin(phi);
+                vertices.push([x, y, z, u]);
+                layerVertices.push(vertexIndex);
+                vertexIndex++;
+            }
+        }
 
-                // Connect to corresponding point in the next ring within the same sphere
-                if (j < thetaCount - 1) {
-                    const nextRingPoint = nextRingStart + k;
-                    edges.push([currentPoint, nextRingPoint]);  // Connect to corresponding point in next ring
-                }
+        layers.push(new Layer(i, layerVertices));
+    }
 
-                // Connect to the same latitude and longitude point in the next 3D sphere layer (U direction)
-                if (i < psiCount - 1) {
-                    const correspondingPointInNextLayer = nextLayerStart + j * pointsPerRing + k;
-                    edges.push([currentPoint, correspondingPointInNextLayer]);
-                }
+    const southPoleIndex = vertices.length;
+    vertices.push([0, 0, 0, -1]);  // South pole
+
+    // Connect north pole to the first layer
+    for (let j = 0; j < pointsPerRing; j++) {
+        layers[0].addEdge(0, layers[0].vertices[j]);
+    }
+
+    // Intra-layer connections (within each layer)
+    for (let layer of layers) {
+        for (let j = 0; j < thetaCount; j++) {
+            const ringStart = j * pointsPerRing;
+            for (let k = 0; k < pointsPerRing; k++) {
+                const currentPoint = layer.vertices[ringStart + k];
+                const nextPointInRing = layer.vertices[ringStart + (k + 1) % pointsPerRing];
+                layer.addEdge(currentPoint, nextPointInRing);
             }
         }
     }
 
-    // Connect south pole to the last 3D sphere layer
-    const southPoleIndex = hypersphereVertices.length - 1;
-    const lastLayerStart = 1 + (psiCount - 1) * thetaCount * pointsPerRing;
-    for (let j = 0; j < pointsPerRing; j++) {
-        edges.push([southPoleIndex, lastLayerStart + j]);
+    // Inter-layer connections between adjacent layers
+    for (let i = 0; i < psiCount - 1; i++) {
+        const layer1 = layers[i];
+        const layer2 = layers[i + 1];
+        for (let j = 0; j < thetaCount; j++) {
+            const ringStart1 = j * pointsPerRing;
+            const ringStart2 = j * pointsPerRing;
+            for (let k = 0; k < pointsPerRing; k++) {
+                layer1.addEdge(layer1.vertices[ringStart1 + k], layer2.vertices[ringStart2 + k]);
+            }
+        }
     }
 
-    return edges;
-})();
+    // Connect last layer to the first layer to complete the cycle
+    const lastLayer = layers[psiCount - 1];
+    const firstLayer = layers[0];
+    for (let j = 0; j < thetaCount; j++) {
+        const ringStartLast = j * pointsPerRing;
+        const ringStartFirst = j * pointsPerRing;
+        for (let k = 0; k < pointsPerRing; k++) {
+            lastLayer.addEdge(lastLayer.vertices[ringStartLast + k], firstLayer.vertices[ringStartFirst + k]);
+        }
+    }
+
+    // Connect south pole to the last layer
+    for (let j = 0; j < pointsPerRing; j++) {
+        lastLayer.addEdge(southPoleIndex, lastLayer.vertices[(thetaCount - 1) * pointsPerRing + j]);
+    }
+
+    // Collect all edges from layers
+    const edges = layers.flatMap(layer => layer.edges);
+
+    return { vertices, edges };
+}
+
+// Generate data
+const hypersphereData = generateHypersphereData();
+export const hypersphereVertices = hypersphereData.vertices;
+export const hypersphereEdges = hypersphereData.edges;
