@@ -1,4 +1,4 @@
-"""# 4D Hypercube with Generalized Rotation and Translation - v3.1.9
+# 4D Hypercube with Generalized Rotation and Translation - v3.1.9
 
 ## Overview
 This project visualizes various 4D geometrical shapes using HTML5 Canvas and JavaScript. The core concept revolves around rendering a 4D hypercube, as well as other 4D and 3D shapes, by projecting them into 2D space with generalized rotation and translation features. The main features include multiple projection modes, rotation, and translation controls for better interaction and understanding of higher-dimensional structures.
