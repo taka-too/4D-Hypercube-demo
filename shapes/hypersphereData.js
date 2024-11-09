@@ -70,6 +70,12 @@ function generateHypersphereData() {
                 const currentPoint = layer.vertices[ringStart + k];
                 const nextPointInRing = layer.vertices[ringStart + (k + 1) % pointsPerRing];
                 layer.addEdge(currentPoint, nextPointInRing);
+
+                // Vertical connection to the next ring in the same layer
+                if (j < thetaCount - 1) {
+                    const nextRingPoint = layer.vertices[ringStart + pointsPerRing + k];
+                    layer.addEdge(currentPoint, nextRingPoint);
+                }
             }
         }
     }
