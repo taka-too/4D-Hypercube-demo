@@ -32,8 +32,8 @@ export const sphereVertices = (() => {
 
 export const sphereEdges = (() => {
     const edges = [];
-    const ringCount = 18;
-    const pointsPerRing = 20;
+    const ringCount = 8;
+    const pointsPerRing = 10;
 
     // Connect north pole to the first ring
     for (let j = 0; j < pointsPerRing; j++) {
