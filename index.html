@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation - v3.0</title>
+    <title>4D Hypercube with Generalized Rotation - v3.0.1</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
@@ -43,10 +43,11 @@
         <button id="resetPosition">Reset Position</button>
         <button id="zoomIn">Zoom In</button>
         <button id="zoomOut">Zoom Out</button>
+        <button id="stopRotation">Stop Rotation</button> <!-- 回転を止めるボタンを追加 -->
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v3.0</div>
+    <div id="version">Code Version: v3.0.1</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -64,6 +65,7 @@
         let currentShapeIndex = 0;
         let currentShape = shapes[currentShapeIndex];
         let scale = 100;
+        let rotationActive = true;
         const k = 255;
         const rotationState = {
             x_y: 0,
@@ -75,10 +77,11 @@
         };
 
         class CanvasDisplay {
-            constructor(canvas, rotationAxes, description) {
+            constructor(canvas, rotationAxes, rotationPair, description) {
                 this.canvas = canvas;
                 this.ctx = canvas.getContext('2d');
                 this.rotationAxes = rotationAxes;
+                this.rotationPair = rotationPair; // 各キャンバスの回転軸の組み合わせ
                 this.description = description;
                 this.vertices2D = [];
                 this.edgePoints2D = [];
@@ -135,13 +138,26 @@
                     lastY = e.clientY; 
                 });
                 this.canvas.addEventListener('mousemove', (e) => {
-                    if (isDragging) {
+                    if (isDragging && rotationActive) {
                         const deltaX = e.clientX - lastX;
                         const deltaY = e.clientY - lastY;
                         lastX = e.clientX;
                         lastY = e.clientY;
-                        rotationState.x_y += deltaX * 0.1;
-                        rotationState.x_z += deltaY * 0.1;
+
+                        // 各キャンバスごとに回転軸を設定
+                        if (this.canvas.id === 'canvas1') {
+                            rotationState.z_u += deltaX * 0.05;
+                            rotationState.y_z += deltaY * 0.05;
+                        } else if (this.canvas.id === 'canvas2') {
+                            rotationState.x_z += deltaX * 0.05;
+                            rotationState.z_u += deltaY * 0.05;
+                        } else if (this.canvas.id === 'canvas3') {
+                            rotationState.x_u += deltaX * 0.05;
+                            rotationState.y_u += deltaY * 0.05;
+                        } else if (this.canvas.id === 'canvas4') {
+                            rotationState.x_z += deltaX * 0.05;
+                            rotationState.y_z += deltaY * 0.05;
+                        }
                     }
                 });
                 this.canvas.addEventListener('mouseup', () => { isDragging = false; });
@@ -150,10 +166,10 @@
         }
 
         const canvasDisplays = [
-            new CanvasDisplay(document.getElementById('canvas1'), [3, 1, 2, 0], "Projection Mode 1: (U, Y, Z, X)"),
-            new CanvasDisplay(document.getElementById('canvas2'), [0, 3, 2, 1], "Projection Mode 2: (X, U, Z, Y)"),
-            new CanvasDisplay(document.getElementById('canvas3'), [0, 1, 3, 2], "Projection Mode 3: (X, Y, U, Z)"),
-            new CanvasDisplay(document.getElementById('canvas4'), [0, 1, 2, 3], "Projection Mode 4: (X, Y, Z, U)")
+            new CanvasDisplay(document.getElementById('canvas1'), [3, 1, 2, 0], [0, 2], "Projection Mode 1: (U, Y, Z, X)"),
+            new CanvasDisplay(document.getElementById('canvas2'), [0, 3, 2, 1], [0, 2], "Projection Mode 2: (X, U, Z, Y)"),
+            new CanvasDisplay(document.getElementById('canvas3'), [0, 1, 3, 2], [0, 3], "Projection Mode 3: (X, Y, U, Z)"),
+            new CanvasDisplay(document.getElementById('canvas4'), [0, 1, 2, 3], [0, 2], "Projection Mode 4: (X, Y, Z, U)")
         ];
 
         function resetToInitialPosition() {
@@ -179,8 +195,9 @@
         }
 
         function animate() {
+            if (!rotationActive) return;
             currentShape.vertices = currentShape.vertices.map(vertex => {
-                const angle = 0.02;
+                const angle = 0.01; // 回転速度を半分に減らす
                 if (rotationState.x_y) vertex = rotate4D(vertex, rotationState.x_y * angle, 0, 1, 0, 1);
                 if (rotationState.x_z) vertex = rotate4D(vertex, rotationState.x_z * angle, 0, 2, 0, 2);
                 if (rotationState.x_u) vertex = rotate4D(vertex, rotationState.x_u * angle, 0, 3, 0, 3);
@@ -212,12 +229,17 @@
             updateAndDraw();
         });
 
+        document.getElementById('stopRotation').addEventListener('click', () => {
+            rotationActive = !rotationActive; // 回転をオン・オフ切り替え
+            if (rotationActive) animate();
+        });
+
         function displayShapeName() {
             document.getElementById('shape-name').textContent = `Current Shape: ${currentShape.name}`;
         }
         displayShapeName();
 
-        animate();
+        animate(); // 初回呼び出しでアニメーション開始
     </script>
 </body>
 </html>
