@@ -1,5 +1,3 @@
-# Create the README content as a text file for download
-
 readme_content = """# 4D Hypercube with Generalized Rotation and Translation - v3.1.9
 
 ## Overview
