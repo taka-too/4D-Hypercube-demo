@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation - v3.0.8</title>
+    <title>4D Hypercube with Generalized Rotation - v3.0.9</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
         .canvas-wrapper { text-align: center; }
         canvas { background-color: white; }
-        #controls { margin-top: 20px; }
-        button { margin: 5px; padding: 10px; }
-        #instructions, #shape-name, #version { font-family: Arial, sans-serif; color: black; margin-top: 10px; text-align: center; }
+        #controls { margin-top: 20px; text-align: center; }
+        button, input[type="range"] { margin: 5px; }
+        #instructions, #shape-name, #version, #dynamic-controls { font-family: Arial, sans-serif; color: black; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
@@ -43,11 +43,15 @@
         <button id="resetPosition">Reset Position</button>
         <button id="zoomIn">Zoom In</button>
         <button id="zoomOut">Zoom Out</button>
-        <button id="stopRotation">Stop Rotation</button> <!-- 回転を止めるボタンを追加 -->
+        <button id="stopRotation">Stop Rotation</button>
+        <div id="dynamic-controls">
+            <label>Point Count: <input type="range" id="pointCountSlider" min="1" max="100" value="50"></label>
+            <label>Point Size: <input type="range" id="pointSizeSlider" min="0.5" max="5" step="0.1" value="1"></label>
+        </div>
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v3.0.8</div>
+    <div id="version">Code Version: v3.0.9</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -63,13 +67,13 @@
             { name: 'Tetrahedron', vertices: tetrahedronVertices.map(v => [...v]), edges: tetrahedronEdges, initialVertices: tetrahedronVertices.map(v => [...v]) },
             { name: '4D Tetrahedron', vertices: tetrahedron4DVertices.map(v => [...v]), edges: tetrahedron4DEdges, initialVertices: tetrahedron4DVertices.map(v => [...v]) },
             { name: 'Sphere', vertices: sphereVertices.map(v => [...v]), edges: sphereEdges, initialVertices: sphereVertices.map(v => [...v]), pointCount: 20, pointSize: 2 },
-            { name: 'Hypersphere', vertices: hypersphereVertices.map(v => [...v]), edges: hypersphereEdges, initialVertices: hypersphereVertices.map(v => [...v]), pointCount: 10, pointSize: 1 }
+            { name: 'Hypersphere', vertices: hypersphereVertices.map(v => [...v]), edges: hypersphereEdges, initialVertices: hypersphereVertices.map(v => [...v]), pointCount: 10, pointSize: 1.5 }
         ];
 
         let currentShapeIndex = 0;
         let currentShape = shapes[currentShapeIndex];
         let scale = 100;
-        let rotationSpeed = 0.01; // 初期回転速度
+        let rotationSpeed = 0.01;
         const k = 255;
         let rotationState = {
             x_y: 0,
@@ -107,8 +111,6 @@
 
             drawVerticesAndEdges(vertices, edges) {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                
-                // `pointCount`および`pointSize`が存在する場合に使用、デフォルト値は50と1
                 const pointCount = currentShape.pointCount || 50;
                 const pointSize = currentShape.pointSize || 1;
 
@@ -154,7 +156,7 @@
                         lastX = e.clientX;
                         lastY = e.clientY;
 
-                        rotationSpeed = 0.01; // ドラッグ開始時に回転速度を再初期化
+                        rotationSpeed = 0.01;
                         this.applyRotation(deltaX, deltaY);
                     }
                 });
@@ -176,7 +178,7 @@
                     lastX = touch.clientX;
                     lastY = touch.clientY;
 
-                    rotationSpeed = 0.01; // タッチ開始時に回転速度を再初期化
+                    rotationSpeed = 0.01;
                     this.applyRotation(deltaX, deltaY);
                 });
             }
@@ -263,8 +265,18 @@
         });
 
         document.getElementById('stopRotation').addEventListener('click', () => {
-            rotationSpeed = 0; // 回転速度を0にして停止
-            rotationState = { x_y: 0, x_z: 0, x_u: 0, y_z: 0, y_u: 0, z_u: 0 }; // 回転ベクトルをリセット
+            rotationSpeed = 0;
+            rotationState = { x_y: 0, x_z: 0, x_u: 0, y_z: 0, y_u: 0, z_u: 0 };
+        });
+
+        document.getElementById('pointCountSlider').addEventListener('input', (e) => {
+            currentShape.pointCount = parseInt(e.target.value);
+            updateAndDraw();
+        });
+
+        document.getElementById('pointSizeSlider').addEventListener('input', (e) => {
+            currentShape.pointSize = parseFloat(e.target.value);
+            updateAndDraw();
         });
 
         function displayShapeName() {
@@ -272,7 +284,7 @@
         }
         displayShapeName();
 
-        animate(); // 初回呼び出しでアニメーション開始
+        animate();
     </script>
 </body>
 </html>
