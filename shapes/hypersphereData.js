@@ -1,121 +1,233 @@
-// Define a Layer class to manage vertices and edges within each layer
-class Layer {
-    constructor(layerIndex, vertices) {
-        this.layerIndex = layerIndex;
-        this.vertices = vertices;  // List of vertex indices in this layer
-        this.edges = [];  // List to store edges within this layer
+// Revised function ensuring poles have up to 48 connections (6 layers * 8 vertices per ring) and exporting data
+
+class Vertex {
+    constructor(index) {
+        this.index = index;
+        // Object to store named connections, all as arrays for consistency
+        this.connections = {
+            ring_next: [],
+            ring_previous: [],
+            vertical_up: [],
+            vertical_down: [],
+            layer_next: [],
+            layer_previous: []
+        };
     }
 
-    addEdge(v1, v2) {
-        this.edges.push([v1, v2]);
+    addConnection(name, otherVertex) {
+        if (!this.connections[name].includes(otherVertex.index)) {
+            this.connections[name].push(otherVertex.index);
+            // Automatically set reciprocal connection based on the name
+            const reciprocalName = {
+                ring_next: "ring_previous",
+                ring_previous: "ring_next",
+                vertical_up: "vertical_down",
+                vertical_down: "vertical_up",
+                layer_next: "layer_previous",
+                layer_previous: "layer_next"
+            };
+            // Set reciprocal connection only if not already set
+            if (!otherVertex.connections[reciprocalName[name]].includes(this.index)) {
+                otherVertex.connections[reciprocalName[name]].push(this.index);
+            }
+        }
     }
 
-    connectTo(otherLayer, pointPairs) {
-        // Connect points in this layer to corresponding points in another layer
-        for (let [p1, p2] of pointPairs) {
-            this.addEdge(this.vertices[p1], otherLayer.vertices[p2]);
-            otherLayer.addEdge(otherLayer.vertices[p2], this.vertices[p1]);
+    isFullyConnected() {
+        // Check if each connection type has at least one connection
+        return Object.values(this.connections).every(connection => connection.length > 0);
+    }
+}
+
+class Ring {
+    constructor(ringIndex, vertices) {
+        this.ringIndex = ringIndex;
+        this.vertices = vertices; // Array of Vertex objects in this ring
+    }
+
+    connectRing() {
+        // Set up ring_next connections (forward connections)
+        for (let i = 0; i < this.vertices.length; i++) {
+            if (i === this.vertices.length - 1) {
+                // Last vertex connects back to the first vertex
+                this.vertices[i].addConnection("ring_next", this.vertices[0]);
+            } else {
+                // Connect current vertex to the next in sequence
+                this.vertices[i].addConnection("ring_next", this.vertices[i + 1]);
+            }
         }
     }
 }
 
-// Main function to generate vertices and edges for the hypersphere
-function generateHypersphereData() {
-    const vertices = [[0, 0, 0, 1]];  // North pole
-    const layers = [];
-    const psiCount = 6;
-    const thetaCount = 6;
-    const pointsPerRing = 8;
-    const radius = 1;
-    let vertexIndex = 1;
+class Layer {
+    constructor(layerIndex, rings, northPole, southPole) {
+        this.layerIndex = layerIndex;
+        this.rings = rings; // Array of Ring objects in this layer
 
-    // Generate vertices for each 3D sphere layer at each psi angle
-    for (let i = 0; i < psiCount; i++) {
-        const layerVertices = [];
-        const psi = (Math.PI * (i + 1)) / (psiCount + 1);
-        const u = radius * Math.cos(psi);
-        const r3d = radius * Math.sin(psi);
-
-        for (let j = 0; j <= thetaCount; j++) {
-            const theta = (Math.PI * j) / thetaCount;
-            const y = r3d * Math.cos(theta);
-            const r2d = r3d * Math.sin(theta);
-
-            for (let k = 0; k < pointsPerRing; k++) {
-                const phi = (2 * Math.PI * k) / pointsPerRing;
-                const x = r2d * Math.cos(phi);
-                const z = r2d * Math.sin(phi);
-                vertices.push([x, y, z, u]);
-                layerVertices.push(vertexIndex);
-                vertexIndex++;
-            }
+        // Connect the first and last rings to the poles
+        for (const vertex of this.rings[0].vertices) {
+            northPole.addConnection("vertical_down", vertex);
+            vertex.addConnection("vertical_up", northPole);
         }
 
-        layers.push(new Layer(i, layerVertices));
+        for (const vertex of this.rings[this.rings.length - 1].vertices) {
+            southPole.addConnection("vertical_up", vertex);
+            vertex.addConnection("vertical_down", southPole);
+        }
     }
 
-    const southPoleIndex = vertices.length;
-    vertices.push([0, 0, 0, -1]);  // South pole
-
-    // Connect north pole to the first layer
-    for (let j = 0; j < pointsPerRing; j++) {
-        layers[0].addEdge(0, layers[0].vertices[j]);
+    connectToNextLayer(nextLayer) {
+        for (let i = 0; i < this.rings.length; i++) {
+            const ring = this.rings[i];
+            const nextRing = nextLayer.rings[i];
+            for (let j = 0; j < ring.vertices.length; j++) {
+                ring.vertices[j].addConnection("layer_next", nextRing.vertices[j]);
+            }
+        }
     }
 
-    // Intra-layer connections (within each layer)
-    for (let layer of layers) {
-        for (let j = 0; j < thetaCount; j++) {
-            const ringStart = j * pointsPerRing;
-            for (let k = 0; k < pointsPerRing; k++) {
-                const currentPoint = layer.vertices[ringStart + k];
-                const nextPointInRing = layer.vertices[ringStart + (k + 1) % pointsPerRing];
-                layer.addEdge(currentPoint, nextPointInRing);
+    validatePoleConnections(northPole, southPole) {
+        // Ensure that each vertex in the first and last ring is connected to the given poles
+        const missingConnections = [];
+        for (const v of this.rings[0].vertices) {
+            if (!v.connections["vertical_up"].includes(northPole.index)) {
+                missingConnections.push(v.index);
+            }
+        }
+        for (const v of this.rings[this.rings.length - 1].vertices) {
+            if (!v.connections["vertical_down"].includes(southPole.index)) {
+                missingConnections.push(v.index);
+            }
+        }
+        return missingConnections;
+    }
+}
 
-                // Vertical connection to the next ring in the same layer
-                if (j < thetaCount - 1) {
-                    const nextRingPoint = layer.vertices[ringStart + pointsPerRing + k];
-                    layer.addEdge(currentPoint, nextRingPoint);
+// Define North and South Poles first
+const northPole = new Vertex(0); // North pole as a Vertex object
+const southPole = new Vertex(1); // South pole as a Vertex object
+let vertexIndex = 2;
+
+// Initialize vertices and layers
+const layers = [];
+const psiCount = 6;
+const thetaCount = 6;
+const pointsPerRing = 8;
+const radius = 1;
+
+// Generate vertices and layers with rings for each 3D sphere layer at each psi angle
+for (let i = 0; i < psiCount; i++) {
+    const layerRings = [];
+    const psi = (Math.PI * (i + 1)) / (psiCount + 1);
+    const u = radius * Math.cos(psi);
+    const r3d = radius * Math.sin(psi);
+
+    // Create rings within the current layer
+    for (let j = 0; j <= thetaCount; j++) {
+        const ringVertices = [];
+        const theta = (Math.PI * j) / thetaCount;
+        const y = r3d * Math.cos(theta);
+        const r2d = r3d * Math.sin(theta);
+
+        // Generate points around this ring
+        for (let k = 0; k < pointsPerRing; k++) {
+            const phi = (2 * Math.PI * k) / pointsPerRing;
+            const x = r2d * Math.cos(phi);
+            const z = r2d * Math.sin(phi);
+            const vertex = new Vertex(vertexIndex);
+            ringVertices.push(vertex);
+            vertexIndex++;
+        }
+
+        // Create a ring object and connect its vertices in a circle
+        const ring = new Ring(j, ringVertices);
+        ring.connectRing();
+        layerRings.push(ring);
+    }
+
+    // Create a layer object with its rings, ensuring pole connections are established
+    const layer = new Layer(i, layerRings, northPole, southPole);
+    layers.push(layer);
+}
+
+// Vertical connections within each layer
+for (const layer of layers) {
+    for (let i = 0; i < layer.rings.length - 1; i++) {
+        const ring = layer.rings[i];
+        const nextRing = layer.rings[i + 1];
+        for (let j = 0; j < ring.vertices.length; j++) {
+            ring.vertices[j].addConnection("vertical_down", nextRing.vertices[j]);
+            nextRing.vertices[j].addConnection("vertical_up", ring.vertices[j]);
+        }
+    }
+}
+
+// Inter-layer connections between adjacent layers
+for (let i = 0; i < psiCount - 1; i++) {
+    const layer = layers[i];
+    const nextLayer = layers[i + 1];
+    layer.connectToNextLayer(nextLayer);
+}
+
+// Connect last layer to the first layer to complete the 4D cycle
+const lastLayer = layers[psiCount - 1];
+const firstLayer = layers[0];
+for (let i = 0; i < lastLayer.rings.length; i++) {
+    const ring1 = lastLayer.rings[i];
+    const ring2 = firstLayer.rings[i];
+    for (let j = 0; j < ring1.vertices.length; j++) {
+        ring1.vertices[j].addConnection("layer_next", ring2.vertices[j]);
+    }
+}
+
+// Validate pole connections for each layer
+const missingPoleConnections = {};
+for (const layer of layers) {
+    const missing = layer.validatePoleConnections(northPole, southPole);
+    if (missing.length > 0) {
+        missingPoleConnections[layer.layerIndex] = missing;
+    }
+}
+
+// Verify that each pole has 48 connections (6 layers * 8 vertices per ring)
+const northPoleConnections = northPole.connections["vertical_down"].length;
+const southPoleConnections = southPole.connections["vertical_up"].length;
+
+// Verify that each vertex has exactly 6 connections
+const missingConnections = {};
+for (const layer of layers) {
+    for (const ring of layer.rings) {
+        for (const vertex of ring.vertices) {
+            if (!vertex.isFullyConnected()) {
+                missingConnections[vertex.index] = Object.entries(vertex.connections)
+                    .filter(([_, conn]) => conn.length === 0)
+                    .map(([name, _]) => name);
+            }
+        }
+    }
+}
+
+// Export vertices and edges data
+const verticesData = [];
+const edgesData = [];
+
+// Collect vertices data
+for (const layer of layers) {
+    for (const ring of layer.rings) {
+        for (const vertex of ring.vertices) {
+            verticesData.push([vertex.index]);
+        }
+    }
+}
+
+// Collect edges data
+for (const layer of layers) {
+    for (const ring of layer.rings) {
+        for (const vertex of ring.vertices) {
+            for (const [connectionType, connections] of Object.entries(vertex.connections)) {
+                for (const conn of connections) {
+                    edgesData.push([vertex.index, conn]);
                 }
             }
         }
     }
-
-    // Inter-layer connections between adjacent layers
-    for (let i = 0; i < psiCount - 1; i++) {
-        const layer1 = layers[i];
-        const layer2 = layers[i + 1];
-        for (let j = 0; j < thetaCount; j++) {
-            const ringStart1 = j * pointsPerRing;
-            const ringStart2 = j * pointsPerRing;
-            for (let k = 0; k < pointsPerRing; k++) {
-                layer1.addEdge(layer1.vertices[ringStart1 + k], layer2.vertices[ringStart2 + k]);
-            }
-        }
-    }
-
-    // Connect last layer to the first layer to complete the cycle
-    const lastLayer = layers[psiCount - 1];
-    const firstLayer = layers[0];
-    for (let j = 0; j < thetaCount; j++) {
-        const ringStartLast = j * pointsPerRing;
-        const ringStartFirst = j * pointsPerRing;
-        for (let k = 0; k < pointsPerRing; k++) {
-            lastLayer.addEdge(lastLayer.vertices[ringStartLast + k], firstLayer.vertices[ringStartFirst + k]);
-        }
-    }
-
-    // Connect south pole to the last layer
-    for (let j = 0; j < pointsPerRing; j++) {
-        lastLayer.addEdge(southPoleIndex, lastLayer.vertices[(thetaCount - 1) * pointsPerRing + j]);
-    }
-
-    // Collect all edges from layers
-    const edges = layers.flatMap(layer => layer.edges);
-
-    return { vertices, edges };
-}
-
-// Generate data
-const hypersphereData = generateHypersphereData();
-export const hypersphereVertices = hypersphereData.vertices;
-export const hypersphereEdges = hypersphereData.edges;
