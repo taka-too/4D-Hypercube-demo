@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Hypercube with Generalized Rotation - v3.0.10</title>
+    <title>4D Hypercube with Rotation and Translation Modes - v3.1.1</title>
     <style>
         body { margin: 0; background-color: white; display: flex; flex-direction: column; align-items: center; }
         .canvas-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
         .canvas-wrapper { text-align: center; }
         canvas { background-color: white; }
         #controls { margin-top: 20px; text-align: center; }
-        button, input[type="range"] { margin: 5px; }
+        button, input[type="range"], input[type="number"] { margin: 5px; }
         #instructions, #shape-name, #version, #dynamic-controls { font-family: Arial, sans-serif; color: black; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
     <div id="instructions">
-        <p><strong>Rotation and Controls</strong></p>
+        <p><strong>Rotation, Translation, and Controls</strong></p>
     </div>
 
     <div class="canvas-container">
@@ -30,7 +30,7 @@
         </div>
         <div class="canvas-wrapper">
             <canvas id="canvas3" width="300" height="300"></canvas>
-            <p>Projection Mode 3: (X, Y, U, Z)</p>
+            <p>Projection Mode 3: (X, Y, U, Z) (Z is unique to Canvas 3)</p>
         </div>
         <div class="canvas-wrapper">
             <canvas id="canvas4" width="300" height="300"></canvas>
@@ -44,13 +44,20 @@
         <button id="zoomIn">Zoom In</button>
         <button id="zoomOut">Zoom Out</button>
         <button id="stopRotation">Stop Rotation</button>
+        <button id="toggleMode">Switch to Translation Mode</button> <!-- 新しいボタン -->
         <div id="dynamic-controls">
             <label>Vertex Size: <input type="range" id="vertexSizeSlider" min="1" max="10" step="0.5" value="5"></label>
+            <div>
+                <label>Translate X: <input type="number" id="translateX" value="0" step="0.1"></label>
+                <label>Translate Y: <input type="number" id="translateY" value="0" step="0.1"></label>
+                <label>Translate Z: <input type="number" id="translateZ" value="0" step="0.1"></label>
+                <label>Translate U: <input type="number" id="translateU" value="0" step="0.1"></label>
+            </div>
         </div>
     </div>
 
     <div id="shape-name"></div>
-    <div id="version">Code Version: v3.0.10</div>
+    <div id="version">Code Version: v3.1.1</div>
 
     <script type="module">
         import { hypercubeVertices, hypercubeEdges } from './shapes/hypercubeData.js';
@@ -75,6 +82,9 @@
         let rotationSpeed = 0.01;
         const k = 255;
         let vertexSize = 5; // 頂点のデフォルトサイズ
+
+        let translation = { x: 0, y: 0, z: 0, u: 0 };
+        let mode = 'rotation'; // 新しいモード
 
         let rotationState = {
             x_y: 0,
@@ -110,14 +120,47 @@
                 return { x: px, y: py, color };
             }
 
+            applyTranslation(vertex) {
+                // 各キャンバスに対応する軸で平行移動を行う
+                if (this.canvas.id === 'canvas1') {
+                    return [
+                        vertex[0] + translation.u, // U軸
+                        vertex[1] + translation.y, // Y軸
+                        vertex[2] + translation.z,
+                        vertex[3] + translation.u
+                    ];
+                } else if (this.canvas.id === 'canvas2') {
+                    return [
+                        vertex[0] + translation.x, // X軸
+                        vertex[1] + translation.u, // U軸
+                        vertex[2] + translation.z,
+                        vertex[3] + translation.u
+                    ];
+                } else if (this.canvas.id === 'canvas3') {
+                    return [
+                        vertex[0] + translation.x, // X軸
+                        vertex[1] + translation.y, // Y軸
+                        vertex[2] + translation.z, // Z軸 (唯一のZ軸対応)
+                        vertex[3] + translation.u
+                    ];
+                } else if (this.canvas.id === 'canvas4') {
+                    return [
+                        vertex[0] + translation.x, // X軸
+                        vertex[1] + translation.y, // Y軸
+                        vertex[2] + translation.z,
+                        vertex[3] + translation.u
+                    ];
+                }
+            }
+
             drawVerticesAndEdges(vertices, edges) {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 const pointCount = currentShape.pointCount || 50;
                 const edgePointSize = currentShape.pointSize || 1;
 
                 edges.forEach(([startIdx, endIdx]) => {
-                    const startVertex = vertices[startIdx];
-                    const endVertex = vertices[endIdx];
+                    const startVertex = this.applyTranslation(vertices[startIdx]);
+                    const endVertex = this.applyTranslation(vertices[endIdx]);
                     for (let i = 0; i <= pointCount; i++) {
                         const t = i / pointCount;
                         const interpolatedVertex = [
@@ -135,7 +178,8 @@
                 });
 
                 vertices.forEach(vertex => {
-                    const { x, y, color } = this.project4DTo2D(vertex);
+                    const translatedVertex = this.applyTranslation(vertex);
+                    const { x, y, color } = this.project4DTo2D(translatedVertex);
                     this.ctx.beginPath();
                     this.ctx.arc(x, y, vertexSize, 0, Math.PI * 2); // 頂点に対して動的サイズを適用
                     this.ctx.fillStyle = color;
@@ -157,8 +201,14 @@
                         lastX = e.clientX;
                         lastY = e.clientY;
 
-                        rotationSpeed = 0.01;
-                        this.applyRotation(deltaX, deltaY);
+                        if (mode === 'rotation') {
+                            rotationSpeed = 0.01;
+                            this.applyRotation(deltaX, deltaY);
+                        } else if (mode === 'translation') {
+                            translation.x += deltaX * 0.1;
+                            translation.y -= deltaY * 0.1;
+                            updateAndDraw();
+                        }
                     }
                 });
                 this.canvas.addEventListener('mouseup', () => { isDragging = false; });
@@ -179,8 +229,14 @@
                     lastX = touch.clientX;
                     lastY = touch.clientY;
 
-                    rotationSpeed = 0.01;
-                    this.applyRotation(deltaX, deltaY);
+                    if (mode === 'rotation') {
+                        rotationSpeed = 0.01;
+                        this.applyRotation(deltaX, deltaY);
+                    } else if (mode === 'translation') {
+                        translation.x += deltaX * 0.1;
+                        translation.y -= deltaY * 0.1;
+                        updateAndDraw();
+                    }
                 });
             }
 
@@ -204,7 +260,7 @@
         const canvasDisplays = [
             new CanvasDisplay(document.getElementById('canvas1'), [3, 1, 2, 0], [0, 2], "Projection Mode 1: (U, Y, Z, X)"),
             new CanvasDisplay(document.getElementById('canvas2'), [0, 3, 2, 1], [0, 2], "Projection Mode 2: (X, U, Z, Y)"),
-            new CanvasDisplay(document.getElementById('canvas3'), [0, 1, 3, 2], [0, 3], "Projection Mode 3: (X, Y, U, Z)"),
+            new CanvasDisplay(document.getElementById('canvas3'), [0, 1, 3, 2], [0, 3], "Projection Mode 3: (X, Y, U, Z) (Z is unique to Canvas 3)"),
             new CanvasDisplay(document.getElementById('canvas4'), [0, 1, 2, 3], [0, 2], "Projection Mode 4: (X, Y, Z, U)")
         ];
 
@@ -217,33 +273,6 @@
             canvasDisplays.forEach(display => {
                 display.drawVerticesAndEdges(currentShape.vertices, currentShape.edges);
             });
-        }
-
-        function rotate4D(vertex, angle, axis1, axis2, rotate_axis1, rotate_axis2) {
-            const cos = Math.cos(angle);
-            const sin = Math.sin(angle);
-
-            let rotatedVertex = [...vertex];
-            rotatedVertex[rotate_axis1] = cos * vertex[axis1] - sin * vertex[axis2];
-            rotatedVertex[rotate_axis2] = sin * vertex[axis1] + cos * vertex[axis2];
-
-            return rotatedVertex;
-        }
-
-        function animate() {
-            currentShape.vertices = currentShape.vertices.map(vertex => {
-                if (rotationSpeed > 0) {
-                    if (rotationState.x_y) vertex = rotate4D(vertex, rotationState.x_y * rotationSpeed, 0, 1, 0, 1);
-                    if (rotationState.x_z) vertex = rotate4D(vertex, rotationState.x_z * rotationSpeed, 0, 2, 0, 2);
-                    if (rotationState.x_u) vertex = rotate4D(vertex, rotationState.x_u * rotationSpeed, 0, 3, 0, 3);
-                    if (rotationState.y_z) vertex = rotate4D(vertex, rotationState.y_z * rotationSpeed, 1, 2, 1, 2);
-                    if (rotationState.y_u) vertex = rotate4D(vertex, rotationState.y_u * rotationSpeed, 1, 3, 1, 3);
-                    if (rotationState.z_u) vertex = rotate4D(vertex, rotationState.z_u * rotationSpeed, 2, 3, 2, 3);
-                }
-                return vertex;
-            });
-            updateAndDraw();
-            requestAnimationFrame(animate);
         }
 
         document.getElementById('switchShape').addEventListener('click', () => {
@@ -270,14 +299,41 @@
             rotationState = { x_y: 0, x_z: 0, x_u: 0, y_z: 0, y_u: 0, z_u: 0 };
         });
 
+        document.getElementById('toggleMode').addEventListener('click', () => {
+            mode = mode === 'rotation' ? 'translation' : 'rotation';
+            document.getElementById('toggleMode').textContent = `Switch to ${mode === 'rotation' ? 'Translation' : 'Rotation'} Mode`;
+        });
+
         document.getElementById('vertexSizeSlider').addEventListener('input', (e) => {
-            vertexSize = parseFloat(e.target.value); // 頂点のサイズを更新
+            vertexSize = parseFloat(e.target.value);
+            updateAndDraw();
+        });
+
+        // Update translation values
+        document.getElementById('translateX').addEventListener('input', (e) => {
+            translation.x = parseFloat(e.target.value);
+            updateAndDraw();
+        });
+
+        document.getElementById('translateY').addEventListener('input', (e) => {
+            translation.y = parseFloat(e.target.value);
+            updateAndDraw();
+        });
+
+        document.getElementById('translateZ').addEventListener('input', (e) => {
+            translation.z = parseFloat(e.target.value);
+            updateAndDraw();
+        });
+
+        document.getElementById('translateU').addEventListener('input', (e) => {
+            translation.u = parseFloat(e.target.value);
             updateAndDraw();
         });
 
         function displayShapeName() {
             document.getElementById('shape-name').textContent = `Current Shape: ${currentShape.name}`;
         }
+
         displayShapeName();
 
         animate();
