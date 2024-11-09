@@ -231,3 +231,19 @@ for (const layer of layers) {
             }
         }
     }
+}
+
+// Exported data in a similar format to the 4D hypercube example
+export const hypersphereVertices = verticesData;
+export const hypersphereEdges = edgesData;
+
+// Final output for verification
+console.log({
+    missingConnections,
+    missingPoleConnections,
+    northPoleConnections,
+    southPoleConnections,
+    hypersphereVertices,
+    hypersphereEdges
+});
+// EOF
